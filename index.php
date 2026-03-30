@@ -10,6 +10,7 @@ $stmt = $pdo->query("
     JOIN usuarios u ON n.autor = u.id
     ORDER BY n.data DESC
 ");
+
 $noticias = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
