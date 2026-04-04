@@ -1,94 +1,118 @@
 <?php
-session_start();
+// admin/nova_noticia.php — FragZone
+require_once __DIR__ . '/../include/verifica_login.php';
 require_once __DIR__ . '/../include/conexao.php';
 require_once __DIR__ . '/../include/funcoes.php';
-require_once __DIR__ . '/../include/verifica_login.php';
 
-// Variável de feedback
-$mensagem = "";
+$erro = ''; $sucesso = '';
 
-// Verifica se enviou o formulário
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    $titulo = trim($_POST['titulo']);
-    $noticia = trim($_POST['noticia']);
-    $categoria = $_POST['categoria'] ?? '';
-    $autor = $_SESSION['usuario_id'];
-
+    $titulo    = sanitizar($_POST['titulo']    ?? '');
+    $conteudo  = trim($_POST['noticia']        ?? '');
+    $categoria = sanitizar($_POST['categoria'] ?? '');
+    $autor     = $_SESSION['usuario_id'];
     $imagemNome = null;
 
-    // Upload de imagem
-    if (!empty($_FILES['imagem']['name'])) {
+    $cats_validas = ['esports','games','campeonatos','lancamentos','analises'];
 
-        $pasta = __DIR__ . '/../assets/img/';
-        $nomeArquivo = time() . "_" . basename($_FILES['imagem']['name']);
-        $caminho = $pasta . $nomeArquivo;
-
-        if (move_uploaded_file($_FILES['imagem']['tmp_name'], $caminho)) {
-            $imagemNome = $nomeArquivo;
-        } else {
-            $mensagem = "Erro ao enviar imagem!";
-        }
-    }
-
-    // Validação básica
-    if ($titulo && $noticia && $categoria) {
-
-        $stmt = $pdo->prepare("
-            INSERT INTO noticias (titulo, noticia, autor, data, imagem, categoria)
-            VALUES (?, ?, ?, NOW(), ?, ?)
-        ");
-
-        if ($stmt->execute([$titulo, $noticia, $autor, $imagemNome, $categoria])) {
-            $mensagem = "Notícia publicada com sucesso!";
-        } else {
-            $mensagem = "Erro ao salvar notícia.";
-        }
-
+    if (!$titulo || !$conteudo || !$categoria) {
+        $erro = 'Preencha todos os campos obrigatórios.';
+    } elseif (!in_array($categoria, $cats_validas)) {
+        $erro = 'Categoria inválida.';
     } else {
-        $mensagem = "Preencha todos os campos obrigatórios!";
+        // Upload de imagem
+        if (!empty($_FILES['imagem']['name'])) {
+            $ext = strtolower(pathinfo($_FILES['imagem']['name'], PATHINFO_EXTENSION));
+            if (!in_array($ext, ['jpg','jpeg','png','gif','webp'])) {
+                $erro = 'Formato de imagem inválido. Use JPG, PNG, GIF ou WEBP.';
+            } elseif ($_FILES['imagem']['size'] > 5 * 1024 * 1024) {
+                $erro = 'Imagem muito grande (máx 5 MB).';
+            } else {
+                $pasta = __DIR__ . '/../assets/img/';
+                if (!is_dir($pasta)) mkdir($pasta, 0755, true);
+                $nome_arq = uniqid('img_') . '.' . $ext;
+                if (move_uploaded_file($_FILES['imagem']['tmp_name'], $pasta . $nome_arq)) {
+                    $imagemNome = $nome_arq;
+                } else {
+                    $erro = 'Erro ao fazer upload da imagem.';
+                }
+            }
+        }
+
+        if (!$erro) {
+            $stmt = $pdo->prepare("
+                INSERT INTO noticias (titulo, noticia, autor, data, imagem, categoria)
+                VALUES (?, ?, ?, NOW(), ?, ?)
+            ");
+            $stmt->execute([$titulo, $conteudo, $autor, $imagemNome, $categoria]);
+            $sucesso = 'Notícia publicada com sucesso!';
+        }
     }
 }
+
+$page_title = 'Nova Notícia';
+include '../include/header.php';
 ?>
 
-<?php include __DIR__ . '/../include/header.php'; ?>
-
 <div class="container container-pad">
-
-    <h2>📰 Nova Notícia</h2>
-
-    <?php if ($mensagem): ?>
-        <div class="alert">
-            <?= sanitizar($mensagem) ?>
+    <div class="form-card wide">
+        <div class="form-card-header">
+            <h2>📰 Nova Notícia</h2>
+            <p>Preencha os campos abaixo para publicar uma nova notícia no portal</p>
         </div>
-    <?php endif; ?>
 
-    <form method="POST" enctype="multipart/form-data" class="form">
+        <?php if ($erro): ?>
+            <div class="alert alert-error">⚠ <?= $erro ?></div>
+        <?php endif; ?>
+        <?php if ($sucesso): ?>
+            <div class="alert alert-success">
+                ✔ <?= $sucesso ?>
+                <a href="../public/index.php" style="margin-left:1rem">Ver no portal →</a>
+                <a href="nova_noticia.php" style="margin-left:.5rem">+ Outra notícia</a>
+            </div>
+        <?php endif; ?>
 
-        <label>Título:</label>
-        <input type="text" name="titulo" required>
+        <form method="POST" enctype="multipart/form-data">
 
-        <label>Conteúdo:</label>
-        <textarea name="noticia" rows="6" required></textarea>
+            <div class="form-group">
+                <label class="form-label">Título *</label>
+                <input class="form-control" type="text" name="titulo" required
+                       placeholder="Título da notícia"
+                       value="<?= isset($_POST['titulo']) ? sanitizar($_POST['titulo']) : '' ?>">
+            </div>
 
-        <label>Imagem:</label>
-        <input type="file" name="imagem">
+            <div class="form-group">
+                <label class="form-label">Categoria *</label>
+                <select class="form-control" name="categoria" required>
+                    <option value="">— Selecione uma categoria —</option>
+                    <option value="esports"     <?= (($_POST['categoria'] ?? '') === 'esports')     ? 'selected' : '' ?>>🏆 E-Sports</option>
+                    <option value="games"       <?= (($_POST['categoria'] ?? '') === 'games')       ? 'selected' : '' ?>>🎮 Games</option>
+                    <option value="campeonatos" <?= (($_POST['categoria'] ?? '') === 'campeonatos') ? 'selected' : '' ?>>🥇 Campeonatos</option>
+                    <option value="lancamentos" <?= (($_POST['categoria'] ?? '') === 'lancamentos') ? 'selected' : '' ?>>🚀 Lançamentos</option>
+                    <option value="analises"    <?= (($_POST['categoria'] ?? '') === 'analises')    ? 'selected' : '' ?>>🔍 Análises</option>
+                </select>
+                <p class="form-hint">A notícia aparecerá na aba "Início" e na aba da categoria escolhida.</p>
+            </div>
 
-        <!-- ✅ CATEGORIA -->
-        <label>Categoria:</label>
-        <select name="categoria" required>
-            <option value="">Selecione uma categoria</option>
-            <option value="e-sports">E-Sports</option>
-            <option value="games">Games</option>
-            <option value="campeonatos">Campeonatos</option>
-            <option value="lancamentos">Lançamentos</option>
-            <option value="analises">Análises</option>
-        </select>
+            <div class="form-group">
+                <label class="form-label">Conteúdo *</label>
+                <textarea class="form-control" name="noticia" required
+                          style="min-height:280px"
+                          placeholder="Escreva o conteúdo completo da notícia aqui..."><?= isset($_POST['noticia']) ? sanitizar($_POST['noticia']) : '' ?></textarea>
+            </div>
 
-        <button type="submit" class="btn btn-primary">Publicar Notícia</button>
+            <div class="form-group">
+                <label class="form-label">Imagem de capa</label>
+                <input class="form-control" type="file" name="imagem" accept="image/*">
+                <p class="form-hint">JPG, PNG, GIF ou WEBP · Máximo 5 MB</p>
+            </div>
 
-    </form>
-
+            <div class="flex gap-2 flex-wrap mt-2">
+                <button type="submit" class="btn btn-primary">🚀 Publicar Notícia</button>
+                <a href="dashboard.php" class="btn btn-ghost">Cancelar</a>
+            </div>
+        </form>
+    </div>
 </div>
 
-<?php include __DIR__ . '/../include/footer.php'; ?>
+<?php include '../include/footer.php'; ?>

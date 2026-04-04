@@ -1,8 +1,12 @@
 <?php
-// funcoes.php — FragZone
+// include/funcoes.php — FragZone
 
 function usuario_logado(): bool {
     return isset($_SESSION['usuario_id']);
+}
+
+function is_admin(): bool {
+    return isset($_SESSION['usuario_tipo']) && $_SESSION['usuario_tipo'] === 'admin';
 }
 
 function redirecionar(string $url): void {
@@ -28,4 +32,15 @@ function formatar_data(string $data): string {
 
 function formatar_data_curta(string $data): string {
     return (new DateTime($data))->format('d/m/Y');
+}
+
+function label_categoria(string $cat): string {
+    $labels = [
+        'esports'     => '🏆 E-Sports',
+        'games'       => '🎮 Games',
+        'campeonatos' => '🥇 Campeonatos',
+        'lancamentos' => '🚀 Lançamentos',
+        'analises'    => '🔍 Análises',
+    ];
+    return $labels[$cat] ?? ucfirst($cat);
 }

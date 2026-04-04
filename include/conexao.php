@@ -1,9 +1,9 @@
 <?php
-// conexao.php — FragZone
+// include/conexao.php — FragZone
 $host   = 'localhost';
-$dbname = 'NoticiasGE';
+$dbname = 'noticiasge';
 $user   = 'root';
-$pass   = '';   // altere se o seu MySQL tiver senha
+$pass   = '';
 
 try {
     $pdo = new PDO(
@@ -17,6 +17,6 @@ try {
     );
 } catch (PDOException $e) {
     http_response_code(500);
-    die('<p style="font-family:monospace;color:#c0392b">Erro de conexão com o banco de dados: '
+    die('<p style="font-family:monospace;color:#c0392b">Erro de conexão: '
         . htmlspecialchars($e->getMessage()) . '</p>');
 }

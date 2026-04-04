@@ -1,5 +1,5 @@
 <?php
-// cadastro.php — FragZone
+// public/cadastro.php — FragZone
 session_start();
 require_once __DIR__ . '/../include/conexao.php';
 require_once __DIR__ . '/../include/funcoes.php';
@@ -28,9 +28,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $erro = 'Este e-mail já está cadastrado.';
         } else {
             $hash = password_hash($senha, PASSWORD_DEFAULT);
-            $ins  = $pdo->prepare("INSERT INTO usuarios (nome, email, senha) VALUES (?,?,?)");
+            // ativo = 0 por padrão: aguarda aprovação do admin
+            $ins = $pdo->prepare("INSERT INTO usuarios (nome, email, senha, tipo, ativo) VALUES (?,?,?,'jornalista',0)");
             $ins->execute([$nome, $email, $hash]);
-            $sucesso = 'Conta criada com sucesso!';
+            $sucesso = 'Conta criada! Aguarde o administrador aprovar seu acesso antes de fazer login.';
         }
     }
 }
@@ -50,9 +51,8 @@ include '../include/header.php';
             <div class="alert alert-error">⚠ <?= $erro ?></div>
         <?php endif; ?>
         <?php if ($sucesso): ?>
-            <div class="alert alert-success">✔ <?= $sucesso ?> <a href="login.php">Fazer login</a></div>
-        <?php endif; ?>
-
+            <div class="alert alert-success">✔ <?= $sucesso ?></div>
+        <?php else: ?>
         <form method="POST">
             <div class="form-group">
                 <label class="form-label">Nome completo</label>
@@ -74,6 +74,11 @@ include '../include/header.php';
             </div>
             <button type="submit" class="btn btn-primary w-full mt-2">Criar conta</button>
         </form>
+
+        <div class="alert alert-info mt-3" style="font-size:.85rem">
+            ℹ️ Após criar a conta, um administrador precisará aprovar o seu acesso antes que você consiga fazer login.
+        </div>
+        <?php endif; ?>
 
         <p class="text-muted text-center mt-3">
             Já tem conta? <a href="login.php">Fazer login</a>

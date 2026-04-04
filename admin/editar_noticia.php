@@ -1,23 +1,35 @@
 <?php
-// editar_noticia.php — FragZone
+// admin/editar_noticia.php — FragZone
 require_once __DIR__ . '/../include/verifica_login.php';
 require_once __DIR__ . '/../include/conexao.php';
-require_once  __DIR__. '/../include/funcoes.php';
+require_once __DIR__ . '/../include/funcoes.php';
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$stmt = $pdo->prepare("SELECT * FROM noticias WHERE id = ? AND autor = ?");
-$stmt->execute([$id, $_SESSION['usuario_id']]);
+
+// Admin pode editar qualquer notícia; jornalista só as suas
+if (is_admin()) {
+    $stmt = $pdo->prepare("SELECT * FROM noticias WHERE id = ?");
+    $stmt->execute([$id]);
+} else {
+    $stmt = $pdo->prepare("SELECT * FROM noticias WHERE id = ? AND autor = ?");
+    $stmt->execute([$id, $_SESSION['usuario_id']]);
+}
 $n = $stmt->fetch();
 if (!$n) redirecionar('dashboard.php');
 
 $erro = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $titulo   = sanitizar($_POST['titulo']  ?? '');
-    $conteudo = trim($_POST['noticia']       ?? '');
-    $imagem   = $n['imagem'];
+    $titulo    = sanitizar($_POST['titulo']    ?? '');
+    $conteudo  = trim($_POST['noticia']        ?? '');
+    $categoria = sanitizar($_POST['categoria'] ?? '');
+    $imagem    = $n['imagem'];
 
-    if (!$titulo || !$conteudo) {
-        $erro = 'Título e conteúdo são obrigatórios.';
+    $cats_validas = ['esports','games','campeonatos','lancamentos','analises'];
+
+    if (!$titulo || !$conteudo || !$categoria) {
+        $erro = 'Título, conteúdo e categoria são obrigatórios.';
+    } elseif (!in_array($categoria, $cats_validas)) {
+        $erro = 'Categoria inválida.';
     } else {
         if (!empty($_FILES['imagem']['name'])) {
             $ext = strtolower(pathinfo($_FILES['imagem']['name'], PATHINFO_EXTENSION));
@@ -26,28 +38,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif ($_FILES['imagem']['size'] > 5 * 1024 * 1024) {
                 $erro = 'Imagem muito grande (máx 5 MB).';
             } else {
-                if (!is_dir('imagens')) mkdir('imagens', 0755, true);
+                $pasta = __DIR__ . '/../assets/img/';
+                if (!is_dir($pasta)) mkdir($pasta, 0755, true);
                 $nome_arq = uniqid('img_') . '.' . $ext;
-                move_uploaded_file($_FILES['imagem']['tmp_name'], 'imagens/' . $nome_arq);
-                $imagem = $nome_arq;
+                if (move_uploaded_file($_FILES['imagem']['tmp_name'], $pasta . $nome_arq)) {
+                    // Remove imagem antiga
+                    if ($n['imagem'] && file_exists($pasta . $n['imagem'])) {
+                        unlink($pasta . $n['imagem']);
+                    }
+                    $imagem = $nome_arq;
+                } else {
+                    $erro = 'Erro ao fazer upload.';
+                }
             }
         }
+
         if (!$erro) {
-            $upd = $pdo->prepare("UPDATE noticias SET titulo=?, noticia=?, imagem=? WHERE id=? AND autor=?");
-            $upd->execute([$titulo, $conteudo, $imagem, $id, $_SESSION['usuario_id']]);
+            $pdo->prepare("UPDATE noticias SET titulo=?, noticia=?, imagem=?, categoria=? WHERE id=?")
+                ->execute([$titulo, $conteudo, $imagem, $categoria, $id]);
             redirecionar('dashboard.php');
         }
     }
 }
 
 $page_title = 'Editar Notícia';
-include 'header.php';
+include '../include/header.php';
 ?>
 
-<div class="form-page" style="padding-top:2rem">
+<div class="container container-pad">
     <div class="form-card wide">
         <div class="form-card-header">
-            <h2>Editar Notícia</h2>
+            <h2>✏️ Editar Notícia</h2>
             <p>Altere os campos e salve as mudanças</p>
         </div>
 
@@ -61,6 +82,19 @@ include 'header.php';
                 <input class="form-control" type="text" name="titulo" required
                        value="<?= sanitizar($n['titulo']) ?>">
             </div>
+
+            <div class="form-group">
+                <label class="form-label">Categoria *</label>
+                <select class="form-control" name="categoria" required>
+                    <option value="">— Selecione —</option>
+                    <option value="esports"     <?= $n['categoria'] === 'esports'     ? 'selected' : '' ?>>🏆 E-Sports</option>
+                    <option value="games"       <?= $n['categoria'] === 'games'       ? 'selected' : '' ?>>🎮 Games</option>
+                    <option value="campeonatos" <?= $n['categoria'] === 'campeonatos' ? 'selected' : '' ?>>🥇 Campeonatos</option>
+                    <option value="lancamentos" <?= $n['categoria'] === 'lancamentos' ? 'selected' : '' ?>>🚀 Lançamentos</option>
+                    <option value="analises"    <?= $n['categoria'] === 'analises'    ? 'selected' : '' ?>>🔍 Análises</option>
+                </select>
+            </div>
+
             <div class="form-group">
                 <label class="form-label">Conteúdo *</label>
                 <textarea class="form-control" name="noticia" required
@@ -70,8 +104,8 @@ include 'header.php';
             <?php if ($n['imagem']): ?>
             <div class="form-group">
                 <label class="form-label">Imagem atual</label>
-                <img src="imagens/<?= sanitizar($n['imagem']) ?>"
-                     style="max-height:160px; border-radius:var(--radius); border:1px solid var(--border); display:block; margin-bottom:.5rem">
+                <img src="../assets/img/<?= sanitizar($n['imagem']) ?>"
+                     style="max-height:160px;border-radius:var(--radius);border:1px solid var(--border);display:block;margin-bottom:.5rem">
             </div>
             <?php endif; ?>
 
@@ -89,4 +123,4 @@ include 'header.php';
     </div>
 </div>
 
-<?php include 'footer.php'; ?>
+<?php include '../include/footer.php'; ?>

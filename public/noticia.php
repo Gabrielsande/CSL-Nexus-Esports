@@ -1,5 +1,5 @@
 <?php
-// noticia.php — FragZone
+// public/noticia.php — FragZone
 session_start();
 require_once __DIR__ . '/../include/conexao.php';
 require_once __DIR__ . '/../include/funcoes.php';
@@ -12,7 +12,7 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$id]);
 $n = $stmt->fetch();
-if (!$n) redirecionar('../public/index.php');
+if (!$n) redirecionar('index.php');
 
 $page_title = $n['titulo'];
 include '../include/header.php';
@@ -22,7 +22,13 @@ include '../include/header.php';
     <div class="article-wrap">
 
         <div class="article-tag">
-            <span class="card-tag">E-Sports</span>
+            <?php if ($n['categoria']): ?>
+                <a href="index.php?cat=<?= urlencode($n['categoria']) ?>" class="card-tag">
+                    <?= label_categoria($n['categoria']) ?>
+                </a>
+            <?php else: ?>
+                <span class="card-tag">📰 Geral</span>
+            <?php endif; ?>
         </div>
 
         <h1 class="article-title"><?= sanitizar($n['titulo']) ?></h1>
@@ -30,17 +36,18 @@ include '../include/header.php';
         <div class="article-meta">
             <span>✍ <span class="meta-author"><?= sanitizar($n['autor_nome']) ?></span></span>
             <span>📅 <?= formatar_data($n['data']) ?></span>
-            <?php if (usuario_logado() && $_SESSION['usuario_id'] == $n['autor']): ?>
+            <?php if (usuario_logado() && ($_SESSION['usuario_id'] == $n['autor'] || is_admin())): ?>
                 <span style="margin-left:auto; display:flex; gap:.5rem; flex-wrap:wrap">
-                    <a href="editar_noticia.php?id=<?= $n['id'] ?>" class="btn btn-ghost btn-sm">✏️ Editar</a>
-                    <a href="excluir_noticia.php?id=<?= $n['id'] ?>" class="btn btn-danger btn-sm"
+                    <a href="../admin/editar_noticia.php?id=<?= $n['id'] ?>" class="btn btn-ghost btn-sm">✏️ Editar</a>
+                    <a href="../admin/excluir_noticia.php?id=<?= $n['id'] ?>" class="btn btn-danger btn-sm"
                        onclick="return confirm('Excluir esta notícia permanentemente?')">🗑️ Excluir</a>
                 </span>
             <?php endif; ?>
         </div>
 
         <?php if ($n['imagem']): ?>
-            <img src="imagens/<?= sanitizar($n['imagem']) ?>" alt="<?= sanitizar($n['titulo']) ?>" class="article-img">
+            <img src="../assets/img/<?= sanitizar($n['imagem']) ?>"
+                 alt="<?= sanitizar($n['titulo']) ?>" class="article-img">
         <?php endif; ?>
 
         <div class="article-body">
@@ -52,7 +59,12 @@ include '../include/header.php';
         </div>
 
         <div class="article-actions">
-            <a href="../public/index.php" class="btn btn-ghost">← Voltar ao Portal</a>
+            <a href="index.php" class="btn btn-ghost">← Voltar ao Portal</a>
+            <?php if ($n['categoria']): ?>
+                <a href="index.php?cat=<?= urlencode($n['categoria']) ?>" class="btn btn-ghost">
+                    Ver mais em <?= label_categoria($n['categoria']) ?>
+                </a>
+            <?php endif; ?>
         </div>
 
     </div>

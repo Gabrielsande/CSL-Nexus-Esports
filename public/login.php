@@ -1,5 +1,5 @@
 <?php
-// login.php — FragZone
+// public/login.php — FragZone
 session_start();
 require_once __DIR__ . '/../include/conexao.php';
 require_once __DIR__ . '/../include/funcoes.php';
@@ -17,12 +17,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE email = ?");
         $stmt->execute([$email]);
         $u = $stmt->fetch();
-        if ($u && password_verify($senha, $u['senha'])) {
+
+        if (!$u) {
+            $erro = 'E-mail ou senha incorretos.';
+        } elseif (!password_verify($senha, $u['senha'])) {
+            $erro = 'E-mail ou senha incorretos.';
+        } elseif ($u['tipo'] !== 'admin' && !(bool)$u['ativo']) {
+            // Conta aguardando aprovação do admin
+            $erro = '⏳ Sua conta ainda não foi aprovada pelo administrador. Aguarde a liberação.';
+        } else {
             $_SESSION['usuario_id']   = $u['id'];
             $_SESSION['usuario_nome'] = $u['nome'];
+            $_SESSION['usuario_tipo'] = $u['tipo'];
             redirecionar('../admin/dashboard.php');
-        } else {
-            $erro = 'E-mail ou senha incorretos.';
         }
     }
 }
@@ -56,6 +63,10 @@ include '../include/header.php';
             </div>
             <button type="submit" class="btn btn-primary w-full mt-2">Entrar</button>
         </form>
+
+        <div class="alert alert-info mt-3" style="font-size:.85rem">
+            ℹ️ Após criar sua conta, aguarde a aprovação do administrador para acessar o painel.
+        </div>
 
         <p class="text-muted text-center mt-3">
             Não tem conta? <a href="cadastro.php">Criar conta gratuita</a>
