@@ -1,5 +1,5 @@
 <?php
-// include/footer.php — FragZone
+// include/footer.php — Nexus Esports
 $is_admin_page = strpos($_SERVER['PHP_SELF'], '/admin/') !== false;
 $public_prefix = $is_admin_page ? '../public/' : '';
 $admin_prefix  = $is_admin_page ? '' : '../admin/';
@@ -8,9 +8,9 @@ $admin_prefix  = $is_admin_page ? '' : '../admin/';
     <div class="footer-inner">
         <div class="footer-brand">
             <a href="<?= $public_prefix ?>index.php" class="logo" style="text-decoration:none">
-                <span class="logo-name">FRAG<em>ZONE</em></span>
+                <span class="logo-name">NEXUS<em>ESPORTS</em></span>
             </a>
-            <p>O portal de referência em notícias de Games e E-Sports do Brasil.</p>
+            <p>O portal de referência em notícias de Games e E-Sports do Brasil. Cobertura completa de campeonatos, lançamentos e tudo que acontece no universo gamer.</p>
             <span class="footer-badge">🎮 PHP · MySQL · NoticiasGE</span>
         </div>
 
@@ -30,7 +30,7 @@ $admin_prefix  = $is_admin_page ? '' : '../admin/';
             <h4>Portal</h4>
             <ul>
                 <?php if (usuario_logado()): ?>
-                    <li><a href="<?= $admin_prefix ?>dashboard.php">📊 Painel</a></li>
+                    <li><a href="<?= $admin_prefix ?>dashboard.php">📊 Dashboard</a></li>
                     <li><a href="<?= $admin_prefix ?>nova_noticia.php">📝 Nova Notícia</a></li>
                     <?php if (is_admin()): ?>
                         <li><a href="<?= $admin_prefix ?>gerenciar_usuarios.php">👥 Gerenciar Usuários</a></li>
@@ -45,7 +45,7 @@ $admin_prefix  = $is_admin_page ? '' : '../admin/';
     </div>
 
     <div class="footer-bottom">
-        <p class="footer-copy">&copy; <?= date('Y') ?> <strong>FragZone</strong> — Todos os direitos reservados.</p>
+        <p class="footer-copy">&copy; <?= date('Y') ?> <strong>Nexus Esports</strong> — Todos os direitos reservados.</p>
         <span class="footer-tech">PHP 8 · MySQL · NoticiasGE</span>
     </div>
 </footer>

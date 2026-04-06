@@ -1,5 +1,5 @@
 <?php
-// admin/dashboard.php - GameNexus BR
+// admin/dashboard.php — Nexus Esports
 require_once __DIR__ . '/../include/verifica_login.php';
 require_once __DIR__ . '/../include/conexao.php';
 require_once __DIR__ . '/../include/funcoes.php';
@@ -8,19 +8,39 @@ $stmtU = $pdo->prepare("SELECT * FROM usuarios WHERE id = ?");
 $stmtU->execute([$_SESSION['usuario_id']]);
 $usuario = $stmtU->fetch();
 
+// Total de notícias do usuário
 $stmtT = $pdo->prepare("SELECT COUNT(*) AS total FROM noticias WHERE autor = ?");
 $stmtT->execute([$_SESSION['usuario_id']]);
 $total = (int)$stmtT->fetch()['total'];
 
+// Última publicação
 $stmtL = $pdo->prepare("SELECT data FROM noticias WHERE autor = ? ORDER BY data DESC LIMIT 1");
 $stmtL->execute([$_SESSION['usuario_id']]);
 $ultima = $stmtL->fetch();
 
+// Notícias do usuário
 $stmtN = $pdo->prepare("SELECT * FROM noticias WHERE autor = ? ORDER BY data DESC");
 $stmtN->execute([$_SESSION['usuario_id']]);
 $noticias = $stmtN->fetchAll();
 
-$aba = in_array($_GET['aba'] ?? '', ['noticias','perfil']) ? $_GET['aba'] : 'noticias';
+// Estatísticas por categoria
+$stmtCat = $pdo->prepare("
+    SELECT categoria, COUNT(*) AS qtd
+    FROM noticias WHERE autor = ? AND categoria IS NOT NULL
+    GROUP BY categoria ORDER BY qtd DESC
+");
+$stmtCat->execute([$_SESSION['usuario_id']]);
+$stats_cat = $stmtCat->fetchAll();
+
+// Notícias do mês atual
+$stmtMes = $pdo->prepare("
+    SELECT COUNT(*) AS total FROM noticias
+    WHERE autor = ? AND MONTH(data) = MONTH(NOW()) AND YEAR(data) = YEAR(NOW())
+");
+$stmtMes->execute([$_SESSION['usuario_id']]);
+$total_mes = (int)$stmtMes->fetch()['total'];
+
+$aba = in_array($_GET['aba'] ?? '', ['noticias','perfil','stats']) ? $_GET['aba'] : 'noticias';
 
 $erro = ''; $sucesso = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'editar_perfil') {
@@ -61,43 +81,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'editar_
 }
 
 $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1));
-$page_title = 'Painel';
+$page_title = 'Dashboard';
 include '../include/header.php';
 ?>
 
 <div class="dash-page">
 <div class="container">
 
+    <!-- Stats principais -->
     <div class="dash-stats">
         <div class="stat-card">
             <span class="stat-number"><?= $total ?></span>
-            <span class="stat-label">Publicações</span>
+            <span class="stat-label">Total de Publicações</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number"><?= $total_mes ?></span>
+            <span class="stat-label">Publicações este mês</span>
         </div>
         <div class="stat-card">
             <span class="stat-number"><?= $ultima ? formatar_data_curta($ultima['data']) : '—' ?></span>
             <span class="stat-label">Última publicação</span>
         </div>
         <div class="stat-card">
-            <span class="stat-number" style="font-size:1.6rem">
-                <?= is_admin() ? '👑' : '🟢' ?>
-            </span>
+            <span class="stat-number" style="font-size:1.6rem"><?= is_admin() ? '👑' : '🟢' ?></span>
             <span class="stat-label"><?= is_admin() ? 'Administrador' : 'Jornalista' ?></span>
         </div>
     </div>
 
     <div class="dash-layout">
+        <!-- Sidebar -->
         <aside class="dash-sidebar">
             <div class="dash-profile-box">
                 <div class="dash-avatar"><?= $inicial ?></div>
                 <div class="dash-profile-name"><?= sanitizar($usuario['nome']) ?></div>
-                <div class="dash-profile-role"><?= is_admin() ? '👑 Administrador' : 'Jornalista' ?></div>
+                <div class="dash-profile-role"><?= is_admin() ? '👑 Administrador' : '🖊️ Jornalista' ?></div>
             </div>
 
             <nav class="dash-nav">
-                <a href="dashboard.php?aba=noticias" class="dash-nav-item <?= $aba === 'noticias' ? 'active' : '' ?>">
+                <a href="dashboard.php?aba=noticias" class="dash-nav-item <?= $aba==='noticias'?'active':'' ?>">
                     📰 Minhas Notícias
                 </a>
-                <a href="dashboard.php?aba=perfil" class="dash-nav-item <?= $aba === 'perfil' ? 'active' : '' ?>">
+                <a href="dashboard.php?aba=stats" class="dash-nav-item <?= $aba==='stats'?'active':'' ?>">
+                    📊 Estatísticas
+                </a>
+                <a href="dashboard.php?aba=perfil" class="dash-nav-item <?= $aba==='perfil'?'active':'' ?>">
                     👤 Editar Perfil
                 </a>
                 <div class="dash-nav-sep"></div>
@@ -117,11 +144,13 @@ include '../include/header.php';
             </nav>
         </aside>
 
+        <!-- Main -->
         <main>
+
             <?php if ($aba === 'noticias'): ?>
             <div class="dash-main-card">
                 <div class="dash-main-header">
-                    <h2>Minhas Notícias</h2>
+                    <h2>📰 Minhas Notícias</h2>
                     <a href="nova_noticia.php" class="btn btn-primary btn-sm">+ Nova Notícia</a>
                 </div>
                 <div class="dash-main-body">
@@ -152,20 +181,14 @@ include '../include/header.php';
                                                 <?= sanitizar(mb_strimwidth($n['titulo'], 0, 55, '…')) ?>
                                             </a>
                                         </td>
-                                        <td>
-                                            <span class="cat-badge">
-                                                <?= $n['categoria'] ? label_categoria($n['categoria']) : '—' ?>
-                                            </span>
-                                        </td>
-                                        <td style="white-space:nowrap;color:var(--text-3)">
-                                            <?= formatar_data_curta($n['data']) ?>
-                                        </td>
+                                        <td><span class="cat-badge"><?= $n['categoria'] ? label_categoria($n['categoria']) : '—' ?></span></td>
+                                        <td style="white-space:nowrap;color:var(--text-3)"><?= formatar_data_curta($n['data']) ?></td>
                                         <td>
                                             <div class="td-actions">
-                                                <a href="editar_noticia.php?id=<?= $n['id'] ?>" class="btn btn-ghost btn-sm">Editar</a>
+                                                <a href="editar_noticia.php?id=<?= $n['id'] ?>" class="btn btn-ghost btn-sm">✏️ Editar</a>
                                                 <a href="excluir_noticia.php?id=<?= $n['id'] ?>"
                                                    class="btn btn-danger btn-sm"
-                                                   onclick="return confirm('Excluir esta notícia?')">Excluir</a>
+                                                   onclick="return confirm('Excluir esta notícia?')">🗑️</a>
                                             </div>
                                         </td>
                                     </tr>
@@ -177,12 +200,70 @@ include '../include/header.php';
                 </div>
             </div>
 
+            <?php elseif ($aba === 'stats'): ?>
+            <!-- Estatísticas -->
+            <div class="dash-main-card">
+                <div class="dash-main-header"><h2>📊 Estatísticas das Notícias</h2></div>
+                <div class="dash-main-body">
+
+                    <!-- Números resumo -->
+                    <div class="stats-grid">
+                        <div class="stats-box">
+                            <span class="stats-num"><?= $total ?></span>
+                            <span class="stats-lbl">Total publicado</span>
+                        </div>
+                        <div class="stats-box">
+                            <span class="stats-num"><?= $total_mes ?></span>
+                            <span class="stats-lbl">Publicado este mês</span>
+                        </div>
+                        <div class="stats-box">
+                            <span class="stats-num"><?= count($stats_cat) ?></span>
+                            <span class="stats-lbl">Categorias usadas</span>
+                        </div>
+                        <div class="stats-box">
+                            <span class="stats-num"><?= $ultima ? formatar_data_curta($ultima['data']) : '—' ?></span>
+                            <span class="stats-lbl">Última publicação</span>
+                        </div>
+                    </div>
+
+                    <!-- Distribuição por categoria -->
+                    <?php if (!empty($stats_cat)): ?>
+                    <h3 style="font-size:.9rem;font-weight:800;margin:1.5rem 0 .85rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em">
+                        Distribuição por categoria
+                    </h3>
+                    <div class="cat-bars">
+                        <?php
+                        $max = max(array_column($stats_cat, 'qtd'));
+                        foreach ($stats_cat as $row):
+                            $pct = $max > 0 ? round($row['qtd'] / $max * 100) : 0;
+                        ?>
+                        <div class="cat-bar-row">
+                            <span class="cat-bar-label"><?= label_categoria($row['categoria']) ?></span>
+                            <div class="cat-bar-track">
+                                <div class="cat-bar-fill" style="width:<?= $pct ?>%"></div>
+                            </div>
+                            <span class="cat-bar-count"><?= $row['qtd'] ?></span>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php else: ?>
+                        <div class="empty-state" style="padding:2rem 1rem">
+                            <span class="empty-icon">📊</span>
+                            <h3>Sem dados ainda</h3>
+                            <p>Publique notícias para ver as estatísticas.</p>
+                            <a href="nova_noticia.php" class="btn btn-primary">+ Nova Notícia</a>
+                        </div>
+                    <?php endif; ?>
+
+                </div>
+            </div>
+
             <?php elseif ($aba === 'perfil'): ?>
             <div class="dash-main-card">
-                <div class="dash-main-header"><h2>Editar Perfil</h2></div>
+                <div class="dash-main-header"><h2>👤 Editar Perfil</h2></div>
                 <div class="dash-main-body">
-                    <?php if ($erro): ?><div class="alert alert-error">⚠ <?= $erro ?></div><?php endif; ?>
-                    <?php if ($sucesso): ?><div class="alert alert-success">✔ <?= $sucesso ?></div><?php endif; ?>
+                    <?php if ($erro):   ?><div class="alert alert-error">⚠ <?= $erro ?></div><?php endif; ?>
+                    <?php if ($sucesso):?><div class="alert alert-success">✔ <?= $sucesso ?></div><?php endif; ?>
 
                     <form method="POST" action="dashboard.php?aba=perfil">
                         <input type="hidden" name="acao" value="editar_perfil">
@@ -222,9 +303,9 @@ include '../include/header.php';
                 </div>
             </div>
             <?php endif; ?>
+
         </main>
     </div>
-
 </div>
 </div>
 

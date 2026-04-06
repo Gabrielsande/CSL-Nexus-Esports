@@ -1,5 +1,5 @@
 <?php
-// admin/gerenciar_usuarios.php — FragZone (somente admin)
+// admin/gerenciar_usuarios.php — Nexus Esports (somente admin)
 require_once __DIR__ . '/../include/verifica_login.php';
 require_once __DIR__ . '/../include/verifica_admin.php';
 require_once __DIR__ . '/../include/conexao.php';
@@ -9,140 +9,95 @@ $erro = ''; $sucesso = '';
 $acao = $_GET['acao'] ?? '';
 $uid  = isset($_GET['uid']) ? (int)$_GET['uid'] : 0;
 
-// ── Ações via GET ──────────────────────────────────────────────────────────
-
-// Aprovar acesso
 if ($acao === 'aprovar' && $uid) {
-    $pdo->prepare("UPDATE usuarios SET ativo = 1 WHERE id = ? AND tipo != 'admin'")
-        ->execute([$uid]);
-    $sucesso = 'Usuário aprovado com sucesso!';
+    $pdo->prepare("UPDATE usuarios SET ativo=1 WHERE id=? AND tipo!='admin'")->execute([$uid]);
+    $sucesso = 'Acesso aprovado com sucesso!';
 }
-
-// Revogar acesso
 if ($acao === 'revogar' && $uid) {
-    $pdo->prepare("UPDATE usuarios SET ativo = 0 WHERE id = ? AND tipo != 'admin'")
-        ->execute([$uid]);
-    $sucesso = 'Acesso do usuário revogado.';
+    $pdo->prepare("UPDATE usuarios SET ativo=0 WHERE id=? AND tipo!='admin'")->execute([$uid]);
+    $sucesso = 'Acesso revogado.';
 }
-
-// Promover a admin
 if ($acao === 'promover' && $uid) {
-    $pdo->prepare("UPDATE usuarios SET tipo = 'admin', ativo = 1 WHERE id = ?")
-        ->execute([$uid]);
+    $pdo->prepare("UPDATE usuarios SET tipo='admin',ativo=1 WHERE id=?")->execute([$uid]);
     $sucesso = 'Usuário promovido a administrador!';
 }
-
-// Rebaixar para jornalista
 if ($acao === 'rebaixar' && $uid) {
-    if ($uid === (int)$_SESSION['usuario_id']) {
-        $erro = 'Você não pode rebaixar a si mesmo.';
-    } else {
-        $pdo->prepare("UPDATE usuarios SET tipo = 'jornalista' WHERE id = ?")
-            ->execute([$uid]);
-        $sucesso = 'Usuário rebaixado para jornalista.';
-    }
+    if ($uid === (int)$_SESSION['usuario_id']) { $erro = 'Você não pode rebaixar a si mesmo.'; }
+    else { $pdo->prepare("UPDATE usuarios SET tipo='jornalista' WHERE id=?")->execute([$uid]); $sucesso = 'Usuário rebaixado para jornalista.'; }
 }
-
-// Excluir usuário
 if ($acao === 'excluir' && $uid) {
-    if ($uid === (int)$_SESSION['usuario_id']) {
-        $erro = 'Você não pode excluir a si mesmo aqui.';
-    } else {
-        // Remove imagens das notícias do usuário
+    if ($uid === (int)$_SESSION['usuario_id']) { $erro = 'Você não pode excluir a si mesmo aqui.'; }
+    else {
         $pasta = __DIR__ . '/../assets/img/';
-        $imgs = $pdo->prepare("SELECT imagem FROM noticias WHERE autor = ? AND imagem IS NOT NULL");
+        $imgs = $pdo->prepare("SELECT imagem FROM noticias WHERE autor=? AND imagem IS NOT NULL");
         $imgs->execute([$uid]);
-        foreach ($imgs->fetchAll() as $row) {
-            if (file_exists($pasta . $row['imagem'])) unlink($pasta . $row['imagem']);
-        }
-        $pdo->prepare("DELETE FROM usuarios WHERE id = ?")->execute([$uid]);
+        foreach ($imgs->fetchAll() as $row) { if (file_exists($pasta.$row['imagem'])) unlink($pasta.$row['imagem']); }
+        $pdo->prepare("DELETE FROM usuarios WHERE id=?")->execute([$uid]);
         $sucesso = 'Usuário excluído com sucesso.';
     }
 }
 
-// ── Criar usuário (POST) ───────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'criar') {
+// Criar usuário
+if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['acao']??'')==='criar') {
     $nome  = sanitizar($_POST['nome']  ?? '');
     $email = sanitizar($_POST['email'] ?? '');
     $senha = $_POST['senha']           ?? '';
-    $tipo  = in_array($_POST['tipo'] ?? '', ['admin','jornalista']) ? $_POST['tipo'] : 'jornalista';
+    $tipo  = in_array($_POST['tipo']??'',['admin','jornalista']) ? $_POST['tipo'] : 'jornalista';
     $ativo = isset($_POST['ativo']) ? 1 : 0;
-
-    if (!$nome || !$email || !$senha) {
-        $erro = 'Nome, e-mail e senha são obrigatórios.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $erro = 'E-mail inválido.';
-    } elseif (strlen($senha) < 6) {
-        $erro = 'Senha deve ter pelo menos 6 caracteres.';
-    } else {
-        $chk = $pdo->prepare("SELECT id FROM usuarios WHERE email = ?");
-        $chk->execute([$email]);
-        if ($chk->fetch()) {
-            $erro = 'Este e-mail já está cadastrado.';
-        } else {
-            $hash = password_hash($senha, PASSWORD_DEFAULT);
-            $pdo->prepare("INSERT INTO usuarios (nome, email, senha, tipo, ativo) VALUES (?,?,?,?,?)")
-                ->execute([$nome, $email, $hash, $tipo, $ativo]);
-            $sucesso = "Usuário \"$nome\" criado com sucesso!";
+    if (!$nome||!$email||!$senha) { $erro='Nome, e-mail e senha obrigatórios.'; }
+    elseif (!filter_var($email,FILTER_VALIDATE_EMAIL)) { $erro='E-mail inválido.'; }
+    elseif (strlen($senha)<6) { $erro='Senha mínimo 6 caracteres.'; }
+    else {
+        $chk=$pdo->prepare("SELECT id FROM usuarios WHERE email=?"); $chk->execute([$email]);
+        if ($chk->fetch()) { $erro='E-mail já cadastrado.'; }
+        else {
+            $hash=password_hash($senha,PASSWORD_DEFAULT);
+            $pdo->prepare("INSERT INTO usuarios (nome,email,senha,tipo,ativo) VALUES (?,?,?,?,?)")->execute([$nome,$email,$hash,$tipo,$ativo]);
+            $sucesso="Usuário \"$nome\" criado!";
         }
     }
 }
 
-// ── Editar usuário (POST) ──────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'editar') {
-    $edit_uid = (int)($_POST['uid'] ?? 0);
-    $nome     = sanitizar($_POST['nome']  ?? '');
-    $email    = sanitizar($_POST['email'] ?? '');
-    $senha    = $_POST['senha']           ?? '';
-    $tipo     = in_array($_POST['tipo'] ?? '', ['admin','jornalista']) ? $_POST['tipo'] : 'jornalista';
-    $ativo    = isset($_POST['ativo']) ? 1 : 0;
-
-    // Não permite rebaixar ou desativar a si mesmo
-    if ($edit_uid === (int)$_SESSION['usuario_id']) {
-        $tipo  = 'admin';
-        $ativo = 1;
-    }
-
-    if (!$nome || !$email) {
-        $erro = 'Nome e e-mail são obrigatórios.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $erro = 'E-mail inválido.';
-    } elseif ($senha && strlen($senha) < 6) {
-        $erro = 'Nova senha deve ter pelo menos 6 caracteres.';
-    } else {
-        $chk = $pdo->prepare("SELECT id FROM usuarios WHERE email = ? AND id != ?");
-        $chk->execute([$email, $edit_uid]);
-        if ($chk->fetch()) {
-            $erro = 'Este e-mail já pertence a outra conta.';
-        } else {
+// Editar usuário
+if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['acao']??'')==='editar') {
+    $edit_uid=(int)($_POST['uid']??0);
+    $nome=sanitizar($_POST['nome']??''); $email=sanitizar($_POST['email']??'');
+    $senha=$_POST['senha']??'';
+    $tipo=in_array($_POST['tipo']??'',['admin','jornalista'])?$_POST['tipo']:'jornalista';
+    $ativo=isset($_POST['ativo'])?1:0;
+    if ($edit_uid===(int)$_SESSION['usuario_id']) { $tipo='admin'; $ativo=1; }
+    if (!$nome||!$email) { $erro='Nome e e-mail obrigatórios.'; }
+    elseif (!filter_var($email,FILTER_VALIDATE_EMAIL)) { $erro='E-mail inválido.'; }
+    elseif ($senha&&strlen($senha)<6) { $erro='Senha mínimo 6 caracteres.'; }
+    else {
+        $chk=$pdo->prepare("SELECT id FROM usuarios WHERE email=? AND id!=?"); $chk->execute([$email,$edit_uid]);
+        if ($chk->fetch()) { $erro='E-mail já pertence a outra conta.'; }
+        else {
             if ($senha) {
-                $hash = password_hash($senha, PASSWORD_DEFAULT);
-                $pdo->prepare("UPDATE usuarios SET nome=?, email=?, senha=?, tipo=?, ativo=? WHERE id=?")
-                    ->execute([$nome, $email, $hash, $tipo, $ativo, $edit_uid]);
+                $hash=password_hash($senha,PASSWORD_DEFAULT);
+                $pdo->prepare("UPDATE usuarios SET nome=?,email=?,senha=?,tipo=?,ativo=? WHERE id=?")->execute([$nome,$email,$hash,$tipo,$ativo,$edit_uid]);
             } else {
-                $pdo->prepare("UPDATE usuarios SET nome=?, email=?, tipo=?, ativo=? WHERE id=?")
-                    ->execute([$nome, $email, $tipo, $ativo, $edit_uid]);
+                $pdo->prepare("UPDATE usuarios SET nome=?,email=?,tipo=?,ativo=? WHERE id=?")->execute([$nome,$email,$tipo,$ativo,$edit_uid]);
             }
-            $sucesso = "Usuário \"$nome\" atualizado com sucesso!";
+            $sucesso="Usuário \"$nome\" atualizado!";
         }
     }
 }
 
-// ── Listar usuários ────────────────────────────────────────────────────────
 $usuarios = $pdo->query("
-    SELECT u.*,
-           (SELECT COUNT(*) FROM noticias WHERE autor = u.id) AS total_noticias
-    FROM usuarios u
-    ORDER BY u.criado_em DESC
+    SELECT u.*, (SELECT COUNT(*) FROM noticias WHERE autor=u.id) AS total_noticias
+    FROM usuarios u ORDER BY u.criado_em DESC
 ")->fetchAll();
 
-// Usuário sendo editado (para modal)
 $editando = null;
-if (isset($_GET['editar']) && (int)$_GET['editar'] > 0) {
-    $stmtEdit = $pdo->prepare("SELECT * FROM usuarios WHERE id = ?");
-    $stmtEdit->execute([(int)$_GET['editar']]);
-    $editando = $stmtEdit->fetch();
+if (isset($_GET['editar']) && (int)$_GET['editar']>0) {
+    $se=$pdo->prepare("SELECT * FROM usuarios WHERE id=?");
+    $se->execute([(int)$_GET['editar']]);
+    $editando=$se->fetch();
 }
+
+$total_users  = count($usuarios);
+$pendentes    = count(array_filter($usuarios, fn($u) => !$u['ativo'] && $u['tipo']!=='admin'));
 
 $page_title = 'Gerenciar Usuários';
 include '../include/header.php';
@@ -152,29 +107,21 @@ include '../include/header.php';
 <div class="container">
 
     <div class="dash-stats">
-        <?php
-        $total_users    = count($usuarios);
-        $pendentes      = count(array_filter($usuarios, fn($u) => !$u['ativo'] && $u['tipo'] !== 'admin'));
-        $total_admins   = count(array_filter($usuarios, fn($u) => $u['tipo'] === 'admin'));
-        ?>
         <div class="stat-card">
             <span class="stat-number"><?= $total_users ?></span>
             <span class="stat-label">Total de Usuários</span>
         </div>
         <div class="stat-card">
-            <span class="stat-number" style="color:<?= $pendentes > 0 ? '#e74c3c' : 'var(--text)' ?>">
-                <?= $pendentes ?>
-            </span>
+            <span class="stat-number" style="color:<?= $pendentes>0?'#e74c3c':'inherit' ?>"><?= $pendentes ?></span>
             <span class="stat-label">Aguardando Aprovação</span>
         </div>
         <div class="stat-card">
-            <span class="stat-number"><?= $total_admins ?></span>
+            <span class="stat-number"><?= count(array_filter($usuarios,fn($u)=>$u['tipo']==='admin')) ?></span>
             <span class="stat-label">Administradores</span>
         </div>
     </div>
 
     <div class="dash-layout">
-        <!-- Sidebar -->
         <aside class="dash-sidebar">
             <div class="dash-profile-box">
                 <div class="dash-avatar">👑</div>
@@ -182,7 +129,7 @@ include '../include/header.php';
                 <div class="dash-profile-role">Administrador</div>
             </div>
             <nav class="dash-nav">
-                <a href="dashboard.php" class="dash-nav-item">📊 Meu Painel</a>
+                <a href="dashboard.php" class="dash-nav-item">📊 Dashboard</a>
                 <a href="gerenciar_usuarios.php" class="dash-nav-item active">👥 Usuários</a>
                 <a href="nova_noticia.php" class="dash-nav-item">✏️ Nova Notícia</a>
                 <a href="../public/index.php" class="dash-nav-item">🏠 Ver Portal</a>
@@ -191,23 +138,15 @@ include '../include/header.php';
             </nav>
         </aside>
 
-        <!-- Main -->
         <main>
+            <?php if ($erro):   ?><div class="alert alert-error"   style="margin-bottom:1.25rem">⚠ <?= $erro ?></div><?php endif; ?>
+            <?php if ($sucesso):?><div class="alert alert-success" style="margin-bottom:1.25rem">✔ <?= $sucesso ?></div><?php endif; ?>
 
-            <?php if ($erro): ?>
-                <div class="alert alert-error" style="margin-bottom:1.25rem">⚠ <?= $erro ?></div>
-            <?php endif; ?>
-            <?php if ($sucesso): ?>
-                <div class="alert alert-success" style="margin-bottom:1.25rem">✔ <?= $sucesso ?></div>
-            <?php endif; ?>
-
-            <!-- ── Card: Criar novo usuário ── -->
+            <!-- Criar usuário -->
             <div class="dash-main-card" style="margin-bottom:1.5rem">
                 <div class="dash-main-header">
                     <h2>➕ Criar Novo Usuário</h2>
-                    <button class="btn btn-primary btn-sm" onclick="toggleForm('form-criar')">
-                        + Criar usuário
-                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="toggleForm('form-criar')">+ Criar usuário</button>
                 </div>
                 <div class="dash-main-body" id="form-criar" style="display:none">
                     <form method="POST">
@@ -236,11 +175,8 @@ include '../include/header.php';
                             </div>
                         </div>
                         <div class="form-group" style="display:flex;align-items:center;gap:.5rem">
-                            <input type="checkbox" name="ativo" id="ativo_criar" value="1" checked
-                                   style="width:auto;accent-color:var(--red)">
-                            <label for="ativo_criar" class="form-label" style="margin:0;cursor:pointer">
-                                Conta já ativada (pode fazer login imediatamente)
-                            </label>
+                            <input type="checkbox" name="ativo" id="ativo_criar" value="1" checked style="width:auto;accent-color:var(--red)">
+                            <label for="ativo_criar" class="form-label" style="margin:0;cursor:pointer">Conta já ativada (pode fazer login imediatamente)</label>
                         </div>
                         <div class="flex gap-2 flex-wrap mt-2">
                             <button type="submit" class="btn btn-primary">Criar usuário</button>
@@ -250,7 +186,7 @@ include '../include/header.php';
                 </div>
             </div>
 
-            <!-- ── Card: Editar usuário (se selecionado) ── -->
+            <!-- Editar usuário -->
             <?php if ($editando): ?>
             <div class="dash-main-card" style="margin-bottom:1.5rem;border:2px solid var(--red)">
                 <div class="dash-main-header">
@@ -264,43 +200,35 @@ include '../include/header.php';
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Nome completo *</label>
-                                <input class="form-control" type="text" name="nome" required
-                                       value="<?= sanitizar($editando['nome']) ?>">
+                                <input class="form-control" type="text" name="nome" required value="<?= sanitizar($editando['nome']) ?>">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">E-mail *</label>
-                                <input class="form-control" type="email" name="email" required
-                                       value="<?= sanitizar($editando['email']) ?>">
+                                <input class="form-control" type="email" name="email" required value="<?= sanitizar($editando['email']) ?>">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Nova senha</label>
-                                <input class="form-control" type="password" name="senha"
-                                       placeholder="Deixe vazio para não alterar">
-                                <p class="form-hint">Mínimo 6 caracteres</p>
+                                <input class="form-control" type="password" name="senha" placeholder="Deixe vazio para não alterar">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Tipo de conta</label>
-                                <select class="form-control" name="tipo"
-                                    <?= $editando['id'] === (int)$_SESSION['usuario_id'] ? 'disabled' : '' ?>>
-                                    <option value="jornalista" <?= $editando['tipo'] === 'jornalista' ? 'selected' : '' ?>>🖊️ Jornalista</option>
-                                    <option value="admin"      <?= $editando['tipo'] === 'admin'      ? 'selected' : '' ?>>👑 Administrador</option>
+                                <select class="form-control" name="tipo" <?= $editando['id']===(int)$_SESSION['usuario_id']?'disabled':'' ?>>
+                                    <option value="jornalista" <?= $editando['tipo']==='jornalista'?'selected':'' ?>>🖊️ Jornalista</option>
+                                    <option value="admin"      <?= $editando['tipo']==='admin'     ?'selected':'' ?>>👑 Administrador</option>
                                 </select>
-                                <?php if ($editando['id'] === (int)$_SESSION['usuario_id']): ?>
+                                <?php if ($editando['id']===(int)$_SESSION['usuario_id']): ?>
                                     <input type="hidden" name="tipo" value="admin">
-                                    <p class="form-hint">Você não pode alterar o próprio tipo.</p>
                                 <?php endif; ?>
                             </div>
                         </div>
                         <div class="form-group" style="display:flex;align-items:center;gap:.5rem">
                             <input type="checkbox" name="ativo" id="ativo_edit" value="1"
-                                   <?= $editando['ativo'] ? 'checked' : '' ?>
-                                   <?= $editando['id'] === (int)$_SESSION['usuario_id'] ? 'disabled' : '' ?>
+                                   <?= $editando['ativo']?'checked':'' ?>
+                                   <?= $editando['id']===(int)$_SESSION['usuario_id']?'disabled':'' ?>
                                    style="width:auto;accent-color:var(--red)">
-                            <label for="ativo_edit" class="form-label" style="margin:0;cursor:pointer">
-                                Conta ativa (permite login)
-                            </label>
+                            <label for="ativo_edit" class="form-label" style="margin:0;cursor:pointer">Conta ativa (permite login)</label>
                         </div>
                         <div class="flex gap-2 flex-wrap mt-2">
                             <button type="submit" class="btn btn-primary">Salvar alterações</button>
@@ -311,120 +239,115 @@ include '../include/header.php';
             </div>
             <?php endif; ?>
 
-            <!-- ── Card: Lista de usuários ── -->
+            <!-- Lista de usuários -->
             <div class="dash-main-card">
-                <div class="dash-main-header">
-                    <h2>👥 Todos os Usuários</h2>
-                </div>
+                <div class="dash-main-header"><h2>👥 Todos os Usuários</h2></div>
                 <div class="dash-main-body">
                     <?php if (empty($usuarios)): ?>
-                        <div class="empty-state">
-                            <span class="empty-icon">👤</span>
-                            <h3>Nenhum usuário cadastrado</h3>
-                        </div>
+                        <div class="empty-state"><span class="empty-icon">👤</span><h3>Nenhum usuário</h3></div>
                     <?php else: ?>
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Nome</th>
-                                    <th>E-mail</th>
-                                    <th>Tipo</th>
-                                    <th>Status</th>
-                                    <th>Notícias</th>
-                                    <th>Desde</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($usuarios as $u): ?>
-                                <tr class="<?= !$u['ativo'] && $u['tipo'] !== 'admin' ? 'row-pending' : '' ?>">
-                                    <td style="color:var(--text-3);font-size:.75rem"><?= $u['id'] ?></td>
-                                    <td>
-                                        <strong><?= sanitizar($u['nome']) ?></strong>
-                                        <?php if ($u['id'] === (int)$_SESSION['usuario_id']): ?>
-                                            <span class="badge-you">você</span>
+                    <div class="users-list">
+                        <?php foreach ($usuarios as $u): ?>
+                        <div class="user-card <?= !$u['ativo']&&$u['tipo']!=='admin'?'user-card--pending':'' ?>">
+
+                            <!-- Avatar + info -->
+                            <div class="user-card-left">
+                                <div class="user-avatar"><?= mb_strtoupper(mb_substr($u['nome'],0,1)) ?></div>
+                                <div class="user-info">
+                                    <div class="user-name">
+                                        <?= sanitizar($u['nome']) ?>
+                                        <?php if ($u['id']===(int)$_SESSION['usuario_id']): ?>
+                                            <span class="tag-you">você</span>
                                         <?php endif; ?>
-                                    </td>
-                                    <td style="color:var(--text-3);font-size:.85rem"><?= sanitizar($u['email']) ?></td>
-                                    <td>
-                                        <?php if ($u['tipo'] === 'admin'): ?>
-                                            <span class="badge-tipo admin">👑 Admin</span>
+                                    </div>
+                                    <div class="user-email"><?= sanitizar($u['email']) ?></div>
+                                    <div class="user-meta">
+                                        <?php if ($u['tipo']==='admin'): ?>
+                                            <span class="tag-tipo admin">👑 Admin</span>
                                         <?php else: ?>
-                                            <span class="badge-tipo jornalista">🖊️ Jornalista</span>
+                                            <span class="tag-tipo jornalista">🖊️ Jornalista</span>
                                         <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <?php if ($u['tipo'] === 'admin'): ?>
-                                            <span class="badge-status ativo">✔ Ativo</span>
+                                        <?php if ($u['tipo']==='admin'): ?>
+                                            <span class="tag-status ativo">● Ativo</span>
                                         <?php elseif ($u['ativo']): ?>
-                                            <span class="badge-status ativo">✔ Aprovado</span>
+                                            <span class="tag-status ativo">● Aprovado</span>
                                         <?php else: ?>
-                                            <span class="badge-status pendente">⏳ Pendente</span>
+                                            <span class="tag-status pendente">● Pendente</span>
                                         <?php endif; ?>
-                                    </td>
-                                    <td style="text-align:center"><?= $u['total_noticias'] ?></td>
-                                    <td style="white-space:nowrap;color:var(--text-3);font-size:.8rem">
-                                        <?= formatar_data_curta($u['criado_em']) ?>
-                                    </td>
-                                    <td>
-                                        <?php if ($u['id'] !== (int)$_SESSION['usuario_id']): ?>
-                                        <div class="td-actions" style="flex-wrap:wrap;gap:.3rem">
+                                        <span class="tag-news"><?= $u['total_noticias'] ?> notícia<?= $u['total_noticias']!=1?'s':'' ?></span>
+                                        <span class="tag-date">Desde <?= formatar_data_curta($u['criado_em']) ?></span>
+                                    </div>
+                                </div>
+                            </div>
 
-                                            <!-- Editar -->
-                                            <a href="gerenciar_usuarios.php?editar=<?= $u['id'] ?>"
-                                               class="btn btn-ghost btn-sm">✏️</a>
+                            <!-- Ações -->
+                            <?php if ($u['id']!==(int)$_SESSION['usuario_id']): ?>
+                            <div class="user-card-actions">
 
-                                            <!-- Aprovar / Revogar (só jornalistas) -->
-                                            <?php if ($u['tipo'] !== 'admin'): ?>
-                                                <?php if (!$u['ativo']): ?>
-                                                    <a href="gerenciar_usuarios.php?acao=aprovar&uid=<?= $u['id'] ?>"
-                                                       class="btn btn-sm"
-                                                       style="background:#27ae60;color:#fff"
-                                                       onclick="return confirm('Aprovar acesso de <?= sanitizar($u['nome']) ?>?')">
-                                                       ✔ Aprovar
-                                                    </a>
-                                                <?php else: ?>
-                                                    <a href="gerenciar_usuarios.php?acao=revogar&uid=<?= $u['id'] ?>"
-                                                       class="btn btn-sm btn-ghost"
-                                                       onclick="return confirm('Revogar acesso de <?= sanitizar($u['nome']) ?>?')">
-                                                       🚫 Revogar
-                                                    </a>
-                                                <?php endif; ?>
-                                            <?php endif; ?>
+                                <!-- Editar -->
+                                <a href="gerenciar_usuarios.php?editar=<?= $u['id'] ?>"
+                                   class="uact-btn uact-edit" title="Editar usuário">
+                                    <span class="uact-icon">✏️</span>
+                                    <span class="uact-label">Editar</span>
+                                </a>
 
-                                            <!-- Promover / Rebaixar -->
-                                            <?php if ($u['tipo'] !== 'admin'): ?>
-                                                <a href="gerenciar_usuarios.php?acao=promover&uid=<?= $u['id'] ?>"
-                                                   class="btn btn-sm"
-                                                   style="background:#f39c12;color:#fff"
-                                                   onclick="return confirm('Promover <?= sanitizar($u['nome']) ?> a administrador?')">
-                                                   👑 Promover
-                                                </a>
-                                            <?php else: ?>
-                                                <a href="gerenciar_usuarios.php?acao=rebaixar&uid=<?= $u['id'] ?>"
-                                                   class="btn btn-sm btn-ghost"
-                                                   onclick="return confirm('Rebaixar <?= sanitizar($u['nome']) ?> para jornalista?')">
-                                                   🖊️ Rebaixar
-                                                </a>
-                                            <?php endif; ?>
+                                <!-- Aprovar / Revogar -->
+                                <?php if ($u['tipo']!=='admin'): ?>
+                                    <?php if (!$u['ativo']): ?>
+                                    <a href="gerenciar_usuarios.php?acao=aprovar&uid=<?= $u['id'] ?>"
+                                       class="uact-btn uact-approve"
+                                       title="Aprovar acesso"
+                                       onclick="return confirm('Aprovar acesso de <?= sanitizar($u['nome']) ?>?')">
+                                        <span class="uact-icon">✅</span>
+                                        <span class="uact-label">Aprovar</span>
+                                    </a>
+                                    <?php else: ?>
+                                    <a href="gerenciar_usuarios.php?acao=revogar&uid=<?= $u['id'] ?>"
+                                       class="uact-btn uact-revoke"
+                                       title="Revogar acesso"
+                                       onclick="return confirm('Revogar acesso de <?= sanitizar($u['nome']) ?>?')">
+                                        <span class="uact-icon">🚫</span>
+                                        <span class="uact-label">Revogar</span>
+                                    </a>
+                                    <?php endif; ?>
+                                <?php endif; ?>
 
-                                            <!-- Excluir -->
-                                            <a href="gerenciar_usuarios.php?acao=excluir&uid=<?= $u['id'] ?>"
-                                               class="btn btn-danger btn-sm"
-                                               onclick="return confirm('Excluir permanentemente <?= sanitizar($u['nome']) ?> e todas as suas notícias?')">
-                                               🗑️
-                                            </a>
-                                        </div>
-                                        <?php else: ?>
-                                            <span style="color:var(--text-3);font-size:.8rem">—</span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                                <!-- Promover / Rebaixar -->
+                                <?php if ($u['tipo']!=='admin'): ?>
+                                <a href="gerenciar_usuarios.php?acao=promover&uid=<?= $u['id'] ?>"
+                                   class="uact-btn uact-promote"
+                                   title="Promover a admin"
+                                   onclick="return confirm('Promover <?= sanitizar($u['nome']) ?> a administrador?')">
+                                    <span class="uact-icon">👑</span>
+                                    <span class="uact-label">Promover</span>
+                                </a>
+                                <?php else: ?>
+                                <a href="gerenciar_usuarios.php?acao=rebaixar&uid=<?= $u['id'] ?>"
+                                   class="uact-btn uact-demote"
+                                   title="Rebaixar para jornalista"
+                                   onclick="return confirm('Rebaixar <?= sanitizar($u['nome']) ?> para jornalista?')">
+                                    <span class="uact-icon">🖊️</span>
+                                    <span class="uact-label">Rebaixar</span>
+                                </a>
+                                <?php endif; ?>
+
+                                <!-- Excluir -->
+                                <a href="gerenciar_usuarios.php?acao=excluir&uid=<?= $u['id'] ?>"
+                                   class="uact-btn uact-delete"
+                                   title="Excluir usuário"
+                                   onclick="return confirm('Excluir permanentemente <?= sanitizar($u['nome']) ?> e todas as suas notícias?')">
+                                    <span class="uact-icon">🗑️</span>
+                                    <span class="uact-label">Excluir</span>
+                                </a>
+                            </div>
+                            <?php else: ?>
+                            <div class="user-card-actions">
+                                <span style="font-size:.78rem;color:var(--text-3)">Sua conta</span>
+                            </div>
+                            <?php endif; ?>
+
+                        </div>
+                        <?php endforeach; ?>
                     </div>
                     <?php endif; ?>
                 </div>
@@ -438,48 +361,11 @@ include '../include/header.php';
 <script>
 function toggleForm(id) {
     var el = document.getElementById(id);
-    if (el) {
-        el.style.display = el.style.display === 'none' ? 'block' : 'none';
-    }
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
-// Abre form automaticamente se houve erro de criação
-<?php if ($erro && ($_POST['acao'] ?? '') === 'criar'): ?>
+<?php if ($erro && ($_POST['acao']??'')==='criar'): ?>
 document.addEventListener('DOMContentLoaded', function(){ toggleForm('form-criar'); });
 <?php endif; ?>
 </script>
-
-<style>
-.row-pending { background: rgba(231,76,60,.06); }
-.badge-you {
-    display:inline-block;
-    background: var(--red);
-    color:#fff;
-    font-size:.65rem;
-    padding:.1rem .4rem;
-    border-radius:999px;
-    margin-left:.4rem;
-    vertical-align:middle;
-    font-weight:700;
-    text-transform:uppercase;
-}
-.badge-tipo {
-    display:inline-block;
-    padding:.2rem .55rem;
-    border-radius:999px;
-    font-size:.75rem;
-    font-weight:700;
-}
-.badge-tipo.admin      { background:rgba(243,156,18,.18); color:#f39c12; }
-.badge-tipo.jornalista { background:rgba(52,152,219,.15); color:#3498db; }
-.badge-status {
-    display:inline-block;
-    padding:.2rem .55rem;
-    border-radius:999px;
-    font-size:.75rem;
-    font-weight:700;
-}
-.badge-status.ativo    { background:rgba(39,174,96,.15); color:#27ae60; }
-.badge-status.pendente { background:rgba(231,76,60,.15);  color:#e74c3c; }
-</style>
 
 <?php include '../include/footer.php'; ?>

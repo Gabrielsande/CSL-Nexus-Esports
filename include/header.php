@@ -1,10 +1,5 @@
 <?php
-// include/header.php — FragZone
-// Requer: session_start() e require_once 'funcoes.php' antes de incluir
-
-// Detecta raiz relativa dependendo de onde está o arquivo chamador
-$depth = substr_count(str_replace('\\','/',__DIR__), '/');
-// Caminho para assets a partir de qualquer pasta do projeto
+// include/header.php — Nexus Esports
 $asset_root = '../assets';
 ?>
 <!DOCTYPE html>
@@ -12,11 +7,11 @@ $asset_root = '../assets';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= isset($page_title) ? sanitizar($page_title) . ' — ' : '' ?>FragZone</title>
+    <title><?= isset($page_title) ? sanitizar($page_title) . ' — ' : '' ?>Nexus Esports</title>
     <link rel="stylesheet" href="<?= $asset_root ?>/css/style.css">
     <script>
         (function(){
-            var t = localStorage.getItem('fragzone-theme') || 'dark';
+            var t = localStorage.getItem('nexus-theme') || 'dark';
             document.documentElement.setAttribute('data-theme', t);
         })();
     </script>
@@ -29,11 +24,9 @@ function nav_active(string $page): string {
     global $atual;
     return $atual === $page ? ' active' : '';
 }
-
-// Define prefixos de link conforme pasta do arquivo atual
-$is_admin_page  = strpos($_SERVER['PHP_SELF'], '/admin/') !== false;
-$public_prefix  = $is_admin_page ? '../public/' : '';
-$admin_prefix   = $is_admin_page ? '' : '../admin/';
+$is_admin_page = strpos($_SERVER['PHP_SELF'], '/admin/') !== false;
+$public_prefix = $is_admin_page ? '../public/' : '';
+$admin_prefix  = $is_admin_page ? '' : '../admin/';
 ?>
 
 <header>
@@ -43,20 +36,19 @@ $admin_prefix   = $is_admin_page ? '' : '../admin/';
         <div class="topbar-right">
             <span><?= date('d/m/Y') ?></span>
             <?php if (usuario_logado()): ?>
-                <span>Olá, <strong><?= sanitizar($_SESSION['usuario_nome']) ?></strong>
+                <span>Olá, <strong><?= sanitizar($_SESSION['usuario_nome']) ?></strong></span>
                 <?php if (is_admin()): ?>
                     <span class="badge-admin">ADMIN</span>
                 <?php endif; ?>
-                </span>
             <?php endif; ?>
         </div>
     </div>
 
-    <!-- Logo + Search + Actions -->
+    <!-- Logo + Search -->
     <div class="header-brand">
         <div class="header-brand-inner">
             <a href="<?= $public_prefix ?>index.php" class="logo">
-                <span class="logo-name">FRAG<em>ZONE</em></span>
+                <span class="logo-name">NEXUS<em>ESPORTS</em></span>
                 <span class="logo-sub">Games &amp; E-Sports News</span>
             </a>
 
@@ -65,7 +57,7 @@ $admin_prefix   = $is_admin_page ? '' : '../admin/';
                        placeholder="Buscar notícias, jogos, campeonatos..."
                        value="<?= isset($_GET['q']) ? sanitizar($_GET['q']) : '' ?>"
                        autocomplete="off" aria-label="Buscar">
-                <button class="search-btn" type="submit" aria-label="Pesquisar">🔍</button>
+                <button class="search-btn" type="submit">🔍</button>
             </form>
 
             <div class="header-actions">
@@ -78,7 +70,7 @@ $admin_prefix   = $is_admin_page ? '' : '../admin/';
     </div>
 
     <!-- Navbar -->
-    <nav class="navbar" aria-label="Navegação principal">
+    <nav class="navbar">
         <div class="navbar-inner">
             <ul class="navbar-links">
                 <li><a href="<?= $public_prefix ?>index.php" class="<?= nav_active('index') ?>">Início</a></li>
@@ -88,14 +80,13 @@ $admin_prefix   = $is_admin_page ? '' : '../admin/';
                 <li><a href="<?= $public_prefix ?>index.php?cat=lancamentos">Lançamentos</a></li>
                 <li><a href="<?= $public_prefix ?>index.php?cat=analises">Análises</a></li>
             </ul>
-
             <div class="navbar-auth">
                 <?php if (usuario_logado()): ?>
-                    <a href="<?= $admin_prefix ?>dashboard.php">Painel</a>
+                    <a href="<?= $admin_prefix ?>dashboard.php">Dashboard</a>
                     <?php if (is_admin()): ?>
-                        <a href="<?= $admin_prefix ?>gerenciar_usuarios.php" style="color:#f39c12; font-weight:700">👥 Usuários</a>
+                        <a href="<?= $admin_prefix ?>gerenciar_usuarios.php" style="color:#f39c12;font-weight:700">👥 Usuários</a>
                     <?php endif; ?>
-                    <a href="<?= $admin_prefix ?>nova_noticia.php" style="color:var(--red); font-weight:900">+ Notícia</a>
+                    <a href="<?= $admin_prefix ?>nova_noticia.php" style="color:var(--red);font-weight:900">+ Notícia</a>
                     <a href="<?= $admin_prefix ?>logout.php">Sair</a>
                 <?php else: ?>
                     <a href="<?= $public_prefix ?>login.php">Login</a>
@@ -130,16 +121,15 @@ $admin_prefix   = $is_admin_page ? '' : '../admin/';
 <script>
 function toggleTheme() {
     var html = document.documentElement;
-    var cur  = html.getAttribute('data-theme');
-    var next = cur === 'dark' ? 'light' : 'dark';
+    var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-theme', next);
-    localStorage.setItem('fragzone-theme', next);
+    localStorage.setItem('nexus-theme', next);
     document.getElementById('theme-btn').textContent = next === 'dark' ? '☀️' : '🌙';
 }
 (function(){
-    var t   = localStorage.getItem('fragzone-theme') || 'dark';
-    var btn = document.getElementById('theme-btn');
+    var t = localStorage.getItem('nexus-theme') || 'dark';
     document.documentElement.setAttribute('data-theme', t);
+    var btn = document.getElementById('theme-btn');
     if (btn) btn.textContent = t === 'dark' ? '☀️' : '🌙';
 })();
 </script>

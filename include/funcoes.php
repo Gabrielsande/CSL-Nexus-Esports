@@ -1,5 +1,5 @@
 <?php
-// include/funcoes.php — FragZone
+// include/funcoes.php — Nexus Esports
 
 function usuario_logado(): bool {
     return isset($_SESSION['usuario_id']);
