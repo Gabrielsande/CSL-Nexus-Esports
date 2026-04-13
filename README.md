@@ -133,11 +133,10 @@ noticias.autor → usuarios.id
 ## 🗂️ Categorias
 
 - 🎮 Games  
-- 🏆 E-Sports  
-- 🥇 Campeonatos  
+- 🏆 E-Sports    
 - 🚀 Lançamentos  
-- 🔍 Análises  
-- 💡 DicasNexus  
+- 🌐 Mundo gamer  
+- 📖 Guias  
 
 ---
 
