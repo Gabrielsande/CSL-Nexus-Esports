@@ -18,11 +18,10 @@ $admin_prefix  = $is_admin_page ? '' : '../admin/';
             <h4>Navegação</h4>
             <ul>
                 <li><a href="<?= $public_prefix ?>index.php">🏠 Início</a></li>
-                <li><a href="<?= $public_prefix ?>index.php?cat=esports">🏆 E-Sports</a></li>
-                <li><a href="<?= $public_prefix ?>index.php?cat=games">🎮 Games</a></li>
-                <li><a href="<?= $public_prefix ?>index.php?cat=campeonatos">🥇 Campeonatos</a></li>
+                <li><a href="<?= $public_prefix ?>index.php?cat=games">🎮 E-Sports &amp; Games</a></li>
                 <li><a href="<?= $public_prefix ?>index.php?cat=lancamentos">🚀 Lançamentos</a></li>
-                <li><a href="<?= $public_prefix ?>index.php?cat=analises">🔍 Análises</a></li>
+                <li><a href="<?= $public_prefix ?>index.php?cat=mundo_gamer">🌐 Mundo Gamer</a></li>
+                <li><a href="<?= $public_prefix ?>index.php?cat=guias">📖 Guias</a></li>
             </ul>
         </div>
 
@@ -46,7 +45,12 @@ $admin_prefix  = $is_admin_page ? '' : '../admin/';
 
     <div class="footer-bottom">
         <p class="footer-copy">&copy; <?= date('Y') ?> <strong>Nexus Esports</strong> — Todos os direitos reservados.</p>
-        <span class="footer-tech">PHP 8 · MySQL · NoticiasGE</span>
+        <span class="footer-tech">
+            💻 <strong>Dev Sandes</strong> ·
+            <a href="https://github.com/Gabrielsande" target="_blank" rel="noopener" style="color:var(--red);text-decoration:none;">
+                GitHub
+            </a>
+        </span>
     </div>
 </footer>
 </body>

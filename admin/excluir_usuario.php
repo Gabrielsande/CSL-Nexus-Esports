@@ -1,5 +1,5 @@
 <?php
-// admin/excluir_usuario.php — FragZone
+// admin/excluir_usuario.php — Nexus Esports
 require_once __DIR__ . '/../include/verifica_login.php';
 require_once __DIR__ . '/../include/conexao.php';
 require_once __DIR__ . '/../include/funcoes.php';

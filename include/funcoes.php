@@ -34,13 +34,23 @@ function formatar_data_curta(string $data): string {
     return (new DateTime($data))->format('d/m/Y');
 }
 
+/** Categorias que só o admin pode publicar */
+function cats_admin_only(): array {
+    return ['mundo_gamer', 'guias'];
+}
+
+/** Todas as categorias válidas */
+function cats_validas(): array {
+    return ['games', 'lancamentos', 'mundo_gamer', 'guias'];
+}
+
 function label_categoria(string $cat): string {
     $labels = [
-        'esports'     => '🏆 E-Sports',
-        'games'       => '🎮 Games',
-        'campeonatos' => '🥇 Campeonatos',
-        'lancamentos' => '🚀 Lançamentos',
-        'analises'    => '🔍 Análises',
+        'esports'      => '🏆 E-Sports',
+        'games'        => '🎮 E-Sports & Games',
+        'lancamentos'  => '🚀 Lançamentos',
+        'mundo_gamer'  => '🌐 Mundo Gamer',
+        'guias'        => '📖 Guias',
     ];
     return $labels[$cat] ?? ucfirst($cat);
 }

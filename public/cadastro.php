@@ -1,5 +1,5 @@
 <?php
-// public/cadastro.php — FragZone
+// public/cadastro.php — Nexus Esports
 session_start();
 require_once __DIR__ . '/../include/conexao.php';
 require_once __DIR__ . '/../include/funcoes.php';
@@ -44,7 +44,7 @@ include '../include/header.php';
     <div class="form-card">
         <div class="form-card-header">
             <h2>Criar conta</h2>
-            <p>Junte-se à equipe de jornalistas do FragZone</p>
+            <p>Junte-se à equipe de jornalistas do Nexus Esports</p>
         </div>
 
         <?php if ($erro): ?>

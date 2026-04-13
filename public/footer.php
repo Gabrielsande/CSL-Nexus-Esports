@@ -1,12 +1,12 @@
 <?php
-// footer.php — FragZone
+// footer.php — Nexus Esports
 ?>
 <footer>
     <div class="footer-grid">
         <div class="footer-brand">
             <a href="../public/index.php" class="logo" style="justify-content:flex-start; margin-bottom:0.5rem;">
                 <span style="font-size:1.5rem; filter:drop-shadow(0 0 6px var(--accent))">🎮</span>
-                <span class="logo-name">Frag<span>Zone</span></span>
+                <span class="logo-name">Nexus<span>Esports</span></span>
             </a>
             <p>O portal número 1 de notícias sobre games e e-sports do Brasil. Cobertura completa de torneios, lançamentos e tudo que rola no universo gamer.</p>
             <span class="footer-powered">POWERED BY PHP + MYSQL</span>
@@ -31,7 +31,6 @@
         <div class="footer-col">
             <h4>▶ Categorias</h4>
             <ul>
-                <li><a href="#">🏆 E-Sports</a></li>
                 <li><a href="#">🎯 FPS</a></li>
                 <li><a href="#">⚔️ MOBA</a></li>
                 <li><a href="#">📱 Mobile Gaming</a></li>
@@ -43,7 +42,7 @@
 
     <div class="footer-bottom">
         <p class="footer-copy">
-            © <?= date('Y') ?> <span>FragZone</span> — TODOS OS DIREITOS RESERVADOS
+            © <?= date('Y') ?> <span>Nexus Esports</span> — TODOS OS DIREITOS RESERVADOS
         </p>
         <pre class="footer-ascii">
  _____                 ______

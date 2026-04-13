@@ -1,5 +1,5 @@
 <?php
-// public/noticia.php — FragZone
+// public/noticia.php — Nexus Esports
 session_start();
 require_once __DIR__ . '/../include/conexao.php';
 require_once __DIR__ . '/../include/funcoes.php';

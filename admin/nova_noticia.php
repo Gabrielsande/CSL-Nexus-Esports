@@ -1,5 +1,5 @@
 <?php
-// admin/nova_noticia.php — FragZone
+// admin/nova_noticia.php — Nexus Esports
 require_once __DIR__ . '/../include/verifica_login.php';
 require_once __DIR__ . '/../include/conexao.php';
 require_once __DIR__ . '/../include/funcoes.php';
@@ -13,12 +13,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $autor     = $_SESSION['usuario_id'];
     $imagemNome = null;
 
-    $cats_validas = ['esports','games','campeonatos','lancamentos','analises'];
+    $cats_validas = cats_validas();
+    $admin_only   = cats_admin_only();
 
     if (!$titulo || !$conteudo || !$categoria) {
         $erro = 'Preencha todos os campos obrigatórios.';
     } elseif (!in_array($categoria, $cats_validas)) {
         $erro = 'Categoria inválida.';
+    } elseif (in_array($categoria, $admin_only) && !is_admin()) {
+        $erro = '🔒 Apenas administradores podem publicar em Mundo Gamer e Guias.';
     } else {
         // Upload de imagem
         if (!empty($_FILES['imagem']['name'])) {
@@ -85,13 +88,21 @@ include '../include/header.php';
                 <label class="form-label">Categoria *</label>
                 <select class="form-control" name="categoria" required>
                     <option value="">— Selecione uma categoria —</option>
-                    <option value="esports"     <?= (($_POST['categoria'] ?? '') === 'esports')     ? 'selected' : '' ?>>🏆 E-Sports</option>
-                    <option value="games"       <?= (($_POST['categoria'] ?? '') === 'games')       ? 'selected' : '' ?>>🎮 Games</option>
-                    <option value="campeonatos" <?= (($_POST['categoria'] ?? '') === 'campeonatos') ? 'selected' : '' ?>>🥇 Campeonatos</option>
+                    <option value="games"       <?= (($_POST['categoria'] ?? '') === 'games')       ? 'selected' : '' ?>>🎮 E-Sports &amp; Games</option>
                     <option value="lancamentos" <?= (($_POST['categoria'] ?? '') === 'lancamentos') ? 'selected' : '' ?>>🚀 Lançamentos</option>
-                    <option value="analises"    <?= (($_POST['categoria'] ?? '') === 'analises')    ? 'selected' : '' ?>>🔍 Análises</option>
+                    <?php if (is_admin()): ?>
+                    <optgroup label="━━ Exclusivo Admin ━━">
+                        <option value="mundo_gamer" <?= (($_POST['categoria'] ?? '') === 'mundo_gamer') ? 'selected' : '' ?>>🌐 Mundo Gamer</option>
+                        <option value="guias"       <?= (($_POST['categoria'] ?? '') === 'guias')       ? 'selected' : '' ?>>📖 Guias</option>
+                    </optgroup>
+                    <?php endif; ?>
                 </select>
-                <p class="form-hint">A notícia aparecerá na aba "Início" e na aba da categoria escolhida.</p>
+                <p class="form-hint">
+                    A notícia aparecerá na aba "Início" e na aba da categoria escolhida.
+                    <?php if (is_admin()): ?>
+                        <strong style="color:var(--red)">🔒 Mundo Gamer e Guias são exclusivos de admin.</strong>
+                    <?php endif; ?>
+                </p>
             </div>
 
             <div class="form-group">

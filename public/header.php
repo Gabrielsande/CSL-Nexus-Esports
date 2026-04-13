@@ -1,5 +1,5 @@
 <?php
-// header.php — FragZone
+// header.php — Nexus Esports
 // Requer: session_start() e require_once 'funcoes.php' antes de incluir
 ?>
 <header>
@@ -7,7 +7,7 @@
         <a href="../public/index.php" class="logo">
             <span class="logo-icon">🎮</span>
             <span class="logo-info">
-                <span class="logo-name">Frag<span>Zone</span></span>
+                <span class="logo-name">Nexus<span>Esports</span></span>
                 <span class="logo-tagline">// games &amp; e-sports news</span>
             </span>
         </a>
@@ -37,7 +37,7 @@
             🏆 Free Fire World Series 2026 com novo recorde de audiência &nbsp;|&nbsp;
             🎮 Nintendo anuncia novo Direct com surpresas para Switch 2 &nbsp;|&nbsp;
             ⚡ Valorant Champions Tour: Brasil garante 3 vagas &nbsp;|&nbsp;
-            🚀 FragZone: O seu portal de games &amp; e-sports
+            🚀 Nexus Esports: O seu portal de games &amp; e-sports
         </span>
     </div>
 </header>
@@ -45,7 +45,7 @@
 <script>
 // Tema
 (function() {
-    const saved = localStorage.getItem('fragzone-theme') || 'dark';
+    const saved = localStorage.getItem('nexus-theme') || 'dark';
     document.documentElement.setAttribute('data-theme', saved);
     document.getElementById('theme-btn').textContent = saved === 'dark' ? '☀️' : '🌙';
 })();
@@ -55,7 +55,7 @@ function toggleTheme() {
     const current = html.getAttribute('data-theme');
     const next = current === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-theme', next);
-    localStorage.setItem('fragzone-theme', next);
+    localStorage.setItem('nexus-theme', next);
     document.getElementById('theme-btn').textContent = next === 'dark' ? '☀️' : '🌙';
 }
 </script>

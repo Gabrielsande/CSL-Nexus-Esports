@@ -1,5 +1,5 @@
 <?php
-// public/login.php — FragZone
+// public/login.php — Nexus Esports
 session_start();
 require_once __DIR__ . '/../include/conexao.php';
 require_once __DIR__ . '/../include/funcoes.php';
@@ -42,7 +42,7 @@ include '../include/header.php';
     <div class="form-card">
         <div class="form-card-header">
             <h2>Entrar no portal</h2>
-            <p>Acesse o painel de jornalista do FragZone</p>
+            <p>Acesse o painel de jornalista do Nexus Esports</p>
         </div>
 
         <?php if ($erro): ?>

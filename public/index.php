@@ -70,15 +70,10 @@ include '../include/header.php';
             <?php endif; ?>
         </div>
 
-        <div class="hero-weather" id="weather-widget">
-            <span class="weather-icon" id="w-icon">🌡️</span>
-            <div class="weather-info">
-                <span class="weather-temp" id="w-temp">--°C</span>
-                <span class="weather-desc" id="w-desc">Carregando...</span>
-                <span class="weather-city" id="w-city">📍 Detectando localização...</span>
-            </div>
-        </div>
 
+
+
+        
         <a href="#noticias" class="hero-scroll-hint">
             <span class="scroll-arrow">↓</span>
             <span>Ver notícias</span>
@@ -92,11 +87,10 @@ include '../include/header.php';
     <?php if ($busca || $cat): ?>
     <div class="cat-filter-bar">
         <a href="index.php" class="cat-pill">📰 Todas</a>
-        <a href="index.php?cat=esports"     class="cat-pill<?= $cat==='esports'     ?' active':'' ?>">🏆 E-Sports</a>
-        <a href="index.php?cat=games"       class="cat-pill<?= $cat==='games'       ?' active':'' ?>">🎮 Games</a>
-        <a href="index.php?cat=campeonatos" class="cat-pill<?= $cat==='campeonatos' ?' active':'' ?>">🥇 Campeonatos</a>
+        <a href="index.php?cat=games"       class="cat-pill<?= $cat==='games'       ?' active':'' ?>">🎮 E-Sports &amp; Games</a>
         <a href="index.php?cat=lancamentos" class="cat-pill<?= $cat==='lancamentos' ?' active':'' ?>">🚀 Lançamentos</a>
-        <a href="index.php?cat=analises"    class="cat-pill<?= $cat==='analises'    ?' active':'' ?>">🔍 Análises</a>
+        <a href="index.php?cat=mundo_gamer" class="cat-pill<?= $cat==='mundo_gamer' ?' active':'' ?>">🌐 Mundo Gamer</a>
+        <a href="index.php?cat=guias"       class="cat-pill<?= $cat==='guias'       ?' active':'' ?>">📖 Guias</a>
     </div>
     <?php endif; ?>
 
@@ -128,8 +122,27 @@ include '../include/header.php';
         </div>
     <?php else: ?>
         <div class="news-grid">
-            <?php foreach ($noticias as $i => $n): ?>
-            <article class="card<?= $i===0 && !$busca ? ' card-featured' : '' ?>">
+            <?php foreach ($noticias as $i => $n):
+                if (!$busca) {
+                    if ($i === 0)          $cardClass = 'card-pos-0';
+                    elseif ($i === 1)      $cardClass = 'card-pos-1';
+                    elseif ($i === 2)      $cardClass = 'card-pos-2';
+                    elseif ($i === 3)      $cardClass = 'card-pos-3';
+                    elseif ($i === 4)      $cardClass = 'card-pos-4';
+                    elseif ($i === 5)      $cardClass = 'card-pos-5';
+                    elseif ($i === 6)      $cardClass = 'card-pos-6';
+                    elseif ($i === 7)      $cardClass = 'card-pos-7';
+                    else                   $cardClass = 'card-pos-rest';
+                } else {
+                    $cardClass = 'card-pos-rest';
+                }
+                $excerptLen = match($cardClass) {
+                    'card-pos-0' => 260,
+                    'card-pos-7' => 200,
+                    default      => 150,
+                };
+            ?>
+            <article class="card <?= $cardClass ?>">
                 <div class="card-img">
                     <?php if ($n['imagem']): ?>
                         <img src="../assets/img/<?= sanitizar($n['imagem']) ?>"
@@ -148,7 +161,7 @@ include '../include/header.php';
                         <span class="card-tag">📰 Geral</span>
                     <?php endif; ?>
                     <h2><a href="noticia.php?id=<?= $n['id'] ?>"><?= sanitizar($n['titulo']) ?></a></h2>
-                    <p class="card-excerpt"><?= sanitizar(resumo($n['noticia'], $i===0&&!$busca?260:180)) ?></p>
+                    <p class="card-excerpt"><?= sanitizar(resumo($n['noticia'], $excerptLen)) ?></p>
                     <div class="card-meta">
                         <span class="card-meta-author">✍ <?= sanitizar($n['autor_nome']) ?></span>
                         <span><?= formatar_data_curta($n['data']) ?></span>
@@ -161,43 +174,6 @@ include '../include/header.php';
 </div>
 
 <script>
-// ── Weather API (Open-Meteo, gratuita, sem chave) ─────────────────────
-const W_ICONS = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'❄️',73:'❄️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️'};
-const W_DESCS = {0:'Céu limpo',1:'Principalmente limpo',2:'Parcialmente nublado',3:'Nublado',45:'Névoa',48:'Névoa gelada',51:'Chuvisco fraco',53:'Chuvisco',55:'Chuvisco forte',61:'Chuva fraca',63:'Chuva moderada',65:'Chuva forte',71:'Neve fraca',73:'Neve',75:'Neve forte',80:'Pancadas de chuva',81:'Pancadas moderadas',82:'Pancadas fortes',95:'Tempestade',96:'Tempestade',99:'Tempestade forte'};
-
-async function fetchWeather(lat, lon, city) {
-    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`);
-    const d = await r.json();
-    const cw = d.current_weather;
-    const code = cw.weathercode;
-    document.getElementById('w-icon').textContent = W_ICONS[code] ?? '🌡️';
-    document.getElementById('w-temp').textContent = Math.round(cw.temperature) + '°C';
-    document.getElementById('w-desc').textContent = W_DESCS[code] ?? 'N/D';
-    document.getElementById('w-city').textContent = '📍 ' + city;
-}
-
-async function loadWeather() {
-    try {
-        const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, {timeout:5000}));
-        const {latitude:lat, longitude:lon} = pos.coords;
-        const geo  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
-        const loc  = await geo.json();
-        const city = loc.address?.city || loc.address?.town || loc.address?.village || loc.address?.county || '—';
-        await fetchWeather(lat, lon, city);
-    } catch(e) {
-        try {
-            const ip = await fetch('https://ipapi.co/json/');
-            const d  = await ip.json();
-            await fetchWeather(d.latitude, d.longitude, d.city || 'Brasil');
-        } catch(e2) {
-            document.getElementById('w-desc').textContent = 'Indisponível';
-            document.getElementById('w-city').textContent = '📍 —';
-            document.getElementById('w-temp').textContent = '--°C';
-        }
-    }
-}
-loadWeather();
-
 // ── Partículas ────────────────────────────────────────────────────────
 (function(){
     const c = document.getElementById('particles');

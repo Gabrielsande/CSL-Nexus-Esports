@@ -1,5 +1,5 @@
 <?php
-// admin/editar_noticia.php — FragZone
+// admin/editar_noticia.php — Nexus Esports
 require_once __DIR__ . '/../include/verifica_login.php';
 require_once __DIR__ . '/../include/conexao.php';
 require_once __DIR__ . '/../include/funcoes.php';
@@ -24,12 +24,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $categoria = sanitizar($_POST['categoria'] ?? '');
     $imagem    = $n['imagem'];
 
-    $cats_validas = ['esports','games','campeonatos','lancamentos','analises'];
+    $cats_validas = cats_validas();
+    $admin_only   = cats_admin_only();
 
     if (!$titulo || !$conteudo || !$categoria) {
         $erro = 'Título, conteúdo e categoria são obrigatórios.';
     } elseif (!in_array($categoria, $cats_validas)) {
         $erro = 'Categoria inválida.';
+    } elseif (in_array($categoria, $admin_only) && !is_admin()) {
+        $erro = '🔒 Apenas administradores podem usar as categorias Mundo Gamer e Guias.';
     } else {
         if (!empty($_FILES['imagem']['name'])) {
             $ext = strtolower(pathinfo($_FILES['imagem']['name'], PATHINFO_EXTENSION));
@@ -87,11 +90,14 @@ include '../include/header.php';
                 <label class="form-label">Categoria *</label>
                 <select class="form-control" name="categoria" required>
                     <option value="">— Selecione —</option>
-                    <option value="esports"     <?= $n['categoria'] === 'esports'     ? 'selected' : '' ?>>🏆 E-Sports</option>
-                    <option value="games"       <?= $n['categoria'] === 'games'       ? 'selected' : '' ?>>🎮 Games</option>
-                    <option value="campeonatos" <?= $n['categoria'] === 'campeonatos' ? 'selected' : '' ?>>🥇 Campeonatos</option>
+                    <option value="games"       <?= $n['categoria'] === 'games'       ? 'selected' : '' ?>>🎮 E-Sports &amp; Games</option>
                     <option value="lancamentos" <?= $n['categoria'] === 'lancamentos' ? 'selected' : '' ?>>🚀 Lançamentos</option>
-                    <option value="analises"    <?= $n['categoria'] === 'analises'    ? 'selected' : '' ?>>🔍 Análises</option>
+                    <?php if (is_admin()): ?>
+                    <optgroup label="━━ Exclusivo Admin ━━">
+                        <option value="mundo_gamer" <?= $n['categoria'] === 'mundo_gamer' ? 'selected' : '' ?>>🌐 Mundo Gamer</option>
+                        <option value="guias"       <?= $n['categoria'] === 'guias'       ? 'selected' : '' ?>>📖 Guias</option>
+                    </optgroup>
+                    <?php endif; ?>
                 </select>
             </div>
 

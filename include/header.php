@@ -61,6 +61,11 @@ $admin_prefix  = $is_admin_page ? '' : '../admin/';
             </form>
 
             <div class="header-actions">
+                <div class="weather-inline" id="weather-widget">
+                    <span class="weather-icon" id="w-icon">🌡️</span>
+                    <span class="weather-temp" id="w-temp">--°C</span>
+                    <span class="weather-city" id="w-city">📍...</span>
+                </div>
                 <button class="btn-theme" id="theme-btn" onclick="toggleTheme()" title="Alternar tema">☀️</button>
                 <?php if (!usuario_logado()): ?>
                     <a href="<?= $public_prefix ?>cadastro.php" class="btn btn-primary btn-sm">Cadastrar</a>
@@ -74,11 +79,10 @@ $admin_prefix  = $is_admin_page ? '' : '../admin/';
         <div class="navbar-inner">
             <ul class="navbar-links">
                 <li><a href="<?= $public_prefix ?>index.php" class="<?= nav_active('index') ?>">Início</a></li>
-                <li><a href="<?= $public_prefix ?>index.php?cat=esports">E-Sports <span class="live-badge">Ao vivo</span></a></li>
-                <li><a href="<?= $public_prefix ?>index.php?cat=games">Games</a></li>
-                <li><a href="<?= $public_prefix ?>index.php?cat=campeonatos">Campeonatos</a></li>
+                <li><a href="<?= $public_prefix ?>index.php?cat=games">E-Sports &amp; Games</a></li>
                 <li><a href="<?= $public_prefix ?>index.php?cat=lancamentos">Lançamentos</a></li>
-                <li><a href="<?= $public_prefix ?>index.php?cat=analises">Análises</a></li>
+                <li><a href="<?= $public_prefix ?>index.php?cat=mundo_gamer">Mundo Gamer</a></li>
+                <li><a href="<?= $public_prefix ?>index.php?cat=guias">Guias</a></li>
             </ul>
             <div class="navbar-auth">
                 <?php if (usuario_logado()): ?>
@@ -132,4 +136,82 @@ function toggleTheme() {
     var btn = document.getElementById('theme-btn');
     if (btn) btn.textContent = t === 'dark' ? '☀️' : '🌙';
 })();
+
+// ── Weather Widget — robusto com cache e múltiplos fallbacks ──────────
+const W_ICONS = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'❄️',73:'❄️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️'};
+
+function setWeatherUI(icon, temp, city) {
+    document.getElementById('w-icon').textContent = icon;
+    document.getElementById('w-temp').textContent = temp;
+    document.getElementById('w-city').textContent = '📍 ' + city;
+}
+
+async function fetchWeatherData(lat, lon, city) {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`, {signal: AbortSignal.timeout(6000)});
+    const d = await r.json();
+    const cw = d.current_weather;
+    const icon = W_ICONS[cw.weathercode] ?? '🌡️';
+    const temp = Math.round(cw.temperature) + '°C';
+    setWeatherUI(icon, temp, city);
+    // salva cache para próxima visita
+    localStorage.setItem('nexus-weather', JSON.stringify({icon, temp, city, ts: Date.now()}));
+}
+
+async function loadWeather() {
+    // 1. Mostra cache imediatamente se tiver (menos de 30 min)
+    try {
+        const cached = JSON.parse(localStorage.getItem('nexus-weather') || 'null');
+        if (cached && (Date.now() - cached.ts) < 30 * 60 * 1000) {
+            setWeatherUI(cached.icon, cached.temp, cached.city);
+        }
+    } catch(e) {}
+
+    // 2. Tenta geolocalização do browser
+    try {
+        const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, {timeout: 4000, maximumAge: 300000}));
+        const {latitude: lat, longitude: lon} = pos.coords;
+        let city = 'Brasil';
+        try {
+            const geo = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`, {signal: AbortSignal.timeout(4000)});
+            const loc = await geo.json();
+            city = loc.address?.city || loc.address?.town || loc.address?.village || loc.address?.county || 'Brasil';
+        } catch(e) {}
+        await fetchWeatherData(lat, lon, city);
+        return;
+    } catch(e) {}
+
+    // 3. Fallback: IP geolocation via ipapi.co
+    try {
+        const ip = await fetch('https://ipapi.co/json/', {signal: AbortSignal.timeout(5000)});
+        const d = await ip.json();
+        if (d.latitude && d.longitude) {
+            await fetchWeatherData(d.latitude, d.longitude, d.city || 'Brasil');
+            return;
+        }
+    } catch(e) {}
+
+    // 4. Fallback: IP geolocation via ip-api.com
+    try {
+        const ip2 = await fetch('https://ip-api.com/json/?fields=lat,lon,city', {signal: AbortSignal.timeout(5000)});
+        const d2 = await ip2.json();
+        if (d2.lat && d2.lon) {
+            await fetchWeatherData(d2.lat, d2.lon, d2.city || 'Brasil');
+            return;
+        }
+    } catch(e) {}
+
+    // 5. Último recurso: São Paulo fixo (sempre funciona)
+    try {
+        await fetchWeatherData(-23.5505, -46.6333, 'São Paulo');
+    } catch(e) {
+        // Se nem Open-Meteo responde, mostra cache antigo ou erro
+        const cached = JSON.parse(localStorage.getItem('nexus-weather') || 'null');
+        if (cached) {
+            setWeatherUI(cached.icon, cached.temp, cached.city + ' *');
+        } else {
+            setWeatherUI('🌡️', '--°C', 'Brasil');
+        }
+    }
+}
+loadWeather();
 </script>

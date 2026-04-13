@@ -1,5 +1,5 @@
 <?php
-// include/conexao.php — FragZone
+// include/conexao.php — Nexus Esports
 $host   = 'localhost';
 $dbname = 'noticiasge';
 $user   = 'root';
