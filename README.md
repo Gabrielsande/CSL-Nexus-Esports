@@ -12,7 +12,7 @@ O **Nexus Esports** é um portal digital focado no universo gamer, trazendo:
 - 📰 Notícias atualizadas  
 - 🏆 Cobertura de e-sports  
 - 🚀 Lançamentos de jogos  
-- 💡 Dicas e conteúdos exclusivos  
+- 💡 Guias e conteúdos exclusivos  
 
 O projeto conta com um sistema administrativo para criação e gerenciamento de notícias.
 
@@ -123,8 +123,7 @@ noticias.autor → usuarios.id
 - Acesso ao dashboard  
 
 ### 🌐 Sistema
-- Modo claro/escuro 🌙☀️  
-- Interface responsiva  
+- Modo claro/escuro 🌙☀️   
 - Categorias dinâmicas  
 - Exibição de temperatura  
 
@@ -133,7 +132,7 @@ noticias.autor → usuarios.id
 ## 🗂️ Categorias
 
 - 🎮 Games  
-- 🏆 E-Sports    
+- 🏆 E-Sports & Games   
 - 🚀 Lançamentos  
 - 🌐 Mundo gamer  
 - 📖 Guias  
@@ -196,12 +195,6 @@ http://localhost/Site_E-sports/public
 
 ---
 
-## 👨‍💻 Autor
-
-**Gabriel Santos de Sandes**  
-Estudante de Ensino Médio Técnico  
-
----
 
 ## 📚 Objetivo
 
@@ -219,10 +212,12 @@ Aplicar conhecimentos de:
 - Sistema de comentários  
 - Curtidas nas notícias  
 - Upload avançado de imagens  
-- API de jogos  
+- API de jogos
 
+  
 ---
+## 👨‍💻 Autor
 
-## 🏁 Conclusão
+**Gabriel Santos de Sandes**  
+Estudante de Ensino Médio Técnico  
 
-O **Nexus Esports** é um projeto completo que demonstra habilidades em desenvolvimento web full stack, com foco em organização, funcionalidade e design moderno.
