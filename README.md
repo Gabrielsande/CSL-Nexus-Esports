@@ -34,9 +34,32 @@ O projeto conta com um sistema administrativo para criação e gerenciamento de 
 Site_E-sports/
 │
 ├── admin/
+      ├── dashboard.php
+      ├── editar_noticia.php
+      ├── editar_usuario.pho
+      ├── excluir_noticia.php
+      ├── gerenciar_usuarios.php
+      ├── logout.php
+      ├── nova_noticia.php
 ├── assets/
+      ├── css/
+           ├── style.css
+      ├── img
 ├── include/
+      ├── conexao.php
+      ├── footer.php
+      ├── funcoes.php
+      ├── header.php
+      ├── verifica_admin.php
+      ├── verifica_login.php
 ├── public/
+      ├── cadastro.php
+      ├── footer.php
+      ├── header.php
+      ├── index.php
+      ├── login.php
+      ├── logout.php
+      ├── noticia.php
 └── noticiasge.sql
 ```
 
